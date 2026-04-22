@@ -6,7 +6,7 @@ struct WakeAlertView: View {
     let wakeRequest: WakeRequest
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var appState: AppState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isConfirming = false
     @State private var isSnoozing = false
     @State private var audioPlayer: AVAudioPlayer?
@@ -15,20 +15,20 @@ struct WakeAlertView: View {
         ZStack {
             // Background gradient
             LinearGradient(
-                colors: [Color("PrimaryOrange"), Color("PrimaryOrangeLight")],
+                colors: [DesignSystem.Colors.wakeGradientStart, DesignSystem.Colors.wakeGradientEnd],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
 
-            // Pulsing glow effect
+            // Pulsing glow effect - Centered in safe area
             Circle()
                 .fill(Color.white.opacity(0.2))
                 .frame(width: 300, height: 300)
                 .modifier(GlowPulseAnimation())
-                .position(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY - 100)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            VStack(spacing: 32) {
+            VStack(spacing: DesignSystem.Spacing.xl) {
                 Spacer()
 
                 // Alarm icon with shake
@@ -37,10 +37,11 @@ struct WakeAlertView: View {
                         .fill(Color.white)
                         .frame(width: 100, height: 100)
                         .modifier(ShakeAnimation())
+                        .shadow(color: Color.black.opacity(0.2), radius: 20, y: 10)
 
                     Image(systemName: "bell.badge.fill")
                         .font(.system(size: 50))
-                        .foregroundColor(Color("PrimaryOrange"))
+                        .foregroundColor(DesignSystem.Colors.wakeGradientStart)
                 }
 
                 // Title
@@ -49,12 +50,12 @@ struct WakeAlertView: View {
                     .foregroundColor(.white)
 
                 // Sender info
-                VStack(spacing: 8) {
+                VStack(spacing: DesignSystem.Spacing.xs) {
                     Text("Wake request from")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.8))
 
-                    Text("Alex Chen")
+                    Text(wakeRequest.senderName)
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -65,44 +66,47 @@ struct WakeAlertView: View {
                     Text(message)
                         .font(.body)
                         .foregroundColor(.white.opacity(0.9))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, DesignSystem.Spacing.lg)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
                         .background(Color.white.opacity(0.1))
-                        .cornerRadius(12)
+                        .cornerRadius(DesignSystem.Spacing.buttonRadius)
                 }
 
-                // Time
-                Text("Received at \(formatTime(wakeRequest.sentAt))")
+                // Time using system formatting
+                Text("Received at \(formattedTime)")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.7))
 
                 Spacer()
 
-                // Action buttons
-                VStack(spacing: 16) {
-                    // I'm Awake button
+                // Action buttons - Using safe area
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // I'm Awake button - Larger touch target
                     Button(action: confirmAwake) {
-                        HStack {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
                             if isConfirming {
                                 ProgressView()
-                                    .tint(.white)
+                                    .tint(DesignSystem.Colors.success)
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
                                 Text("I'm Awake")
                             }
                         }
                         .font(.headline)
-                        .foregroundColor(Color("Success"))
+                        .foregroundColor(DesignSystem.Colors.success)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
+                        .frame(height: DesignSystem.TouchTargets.standard)
                         .background(Color.white)
-                        .cornerRadius(16)
+                        .cornerRadius(DesignSystem.Spacing.cardRadius)
+                        .shadow(color: Color.black.opacity(0.2), radius: 10, y: 5)
                     }
                     .disabled(isConfirming)
+                    .buttonStyle(ScaleButtonStyle())
 
-                    // Snooze button
+                    // Snooze button - Larger touch target
                     Button(action: snoozeAlarm) {
-                        HStack {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
                             if isSnoozing {
                                 ProgressView()
                                     .tint(.white)
@@ -114,14 +118,15 @@ struct WakeAlertView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
+                        .frame(height: DesignSystem.TouchTargets.standard)
                         .background(Color.white.opacity(0.2))
-                        .cornerRadius(16)
+                        .cornerRadius(DesignSystem.Spacing.cardRadius)
                     }
                     .disabled(isSnoozing)
+                    .buttonStyle(ScaleButtonStyle())
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 60)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.bottom, DesignSystem.Spacing.lg) // Use standard bottom padding
             }
         }
         .onAppear {
@@ -133,11 +138,19 @@ struct WakeAlertView: View {
         }
     }
 
+    private var formattedTime: String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: wakeRequest.sentAt)
+    }
+
     private func confirmAwake() {
         isConfirming = true
         stopAlarmSound()
 
-        // Send confirmation to backend
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isConfirming = false
             dismiss()
@@ -148,7 +161,9 @@ struct WakeAlertView: View {
         isSnoozing = true
         stopAlarmSound()
 
-        // Send snooze to backend
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isSnoozing = false
             dismiss()
@@ -156,8 +171,7 @@ struct WakeAlertView: View {
     }
 
     private func playAlarmSound() {
-        // In production, this would play a critical alert sound
-        // For now, we'll just trigger haptic
+        // Critical alert sound would play here
     }
 
     private func stopAlarmSound() {
@@ -169,15 +183,9 @@ struct WakeAlertView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.warning)
     }
-
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
-    }
 }
 
-// MARK: - Animations
+// MARK: - Spring-based Animations
 struct GlowPulseAnimation: ViewModifier {
     @State private var isAnimating = false
 
@@ -186,8 +194,7 @@ struct GlowPulseAnimation: ViewModifier {
             .scaleEffect(isAnimating ? 1.3 : 1.0)
             .opacity(isAnimating ? 0 : 0.5)
             .animation(
-                .easeInOut(duration: 1.5)
-                .repeatForever(autoreverses: true),
+                .spring(response: 1.5, dampingFraction: 0.6).repeatForever(autoreverses: true),
                 value: isAnimating
             )
             .onAppear { isAnimating = true }
@@ -201,8 +208,7 @@ struct ShakeAnimation: ViewModifier {
         content
             .rotationEffect(.degrees(isAnimating ? -5 : 5))
             .animation(
-                .easeInOut(duration: 0.1)
-                .repeatForever(autoreverses: true),
+                .spring(response: 0.1, dampingFraction: 0.5).repeatForever(autoreverses: true),
                 value: isAnimating
             )
             .onAppear { isAnimating = true }

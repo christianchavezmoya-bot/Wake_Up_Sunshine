@@ -8,42 +8,101 @@ struct OnboardingFlowView: View {
         case welcome
         case phoneInput
         case otpVerification
-        case notifications
-        case criticalAlerts
+        case permissions // Consolidated: notifications + critical alerts
         case ready
 
         var progress: Double {
-            Double(rawValue + 1) / Double(OnboardingStep.allCases.count)
+            switch self {
+            case .welcome: return 0.2
+            case .phoneInput: return 0.4
+            case .otpVerification: return 0.6
+            case .permissions: return 0.8
+            case .ready: return 1.0
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .welcome: return ""
+            case .phoneInput: return "Back"
+            case .otpVerification: return "Back"
+            case .permissions: return "Back"
+            case .ready: return ""
+            }
         }
     }
 
     var body: some View {
         ZStack {
-            Color("Background").ignoresSafeArea()
+            Color.appBackground.ignoresSafeArea()
 
-            VStack {
-                ProgressView(value: currentStep.progress)
-                    .tint(Color("PrimaryOrange"))
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
+            VStack(spacing: 0) {
+                // Progress bar with back button
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    // Back button (when applicable)
+                    if currentStep != .welcome && currentStep != .ready {
+                        Button(action: goBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.body.weight(.semibold))
+                                .foregroundColor(DesignSystem.Colors.primaryOrange)
+                                .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
+                        }
+                    }
+
+                    ProgressView(value: currentStep.progress)
+                        .tint(DesignSystem.Colors.primaryOrange)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.top, DesignSystem.Spacing.md)
+                .padding(.bottom, DesignSystem.Spacing.md)
 
                 Spacer()
 
+                // Content with spring animation
                 switch currentStep {
                 case .welcome:
                     WelcomeStepView(onContinue: { currentStep = .phoneInput })
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .phoneInput:
                     PhoneInputStepView(onContinue: { currentStep = .otpVerification })
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .otpVerification:
-                    OtpVerificationStepView(onContinue: { currentStep = .notifications })
-                case .notifications:
-                    NotificationsStepView(onContinue: { currentStep = .criticalAlerts })
-                case .criticalAlerts:
-                    CriticalAlertsStepView(onContinue: { currentStep = .ready })
+                    OtpVerificationStepView(onContinue: { currentStep = .permissions })
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                case .permissions:
+                    PermissionsStepView(onContinue: { currentStep = .ready })
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .ready:
                     ReadyStepView()
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
+        }
+        .animation(.springStandard, value: currentStep)
+    }
+
+    private func goBack() {
+        switch currentStep {
+        case .phoneInput:
+            currentStep = .welcome
+        case .otpVerification:
+            currentStep = .phoneInput
+        case .permissions:
+            currentStep = .otpVerification
+        default:
+            break
         }
     }
 }
@@ -53,52 +112,49 @@ struct WelcomeStepView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: DesignSystem.Spacing.xl) {
             Spacer()
 
+            // Animated logo
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color("PrimaryOrange"), Color("PrimaryOrangeLight")],
+                            colors: [DesignSystem.Colors.primaryOrange, DesignSystem.Colors.primaryOrangeLight],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 180, height: 180)
-                    .shadow(color: Color("PrimaryOrange").opacity(0.4), radius: 30, y: 10)
+                    .shadow(color: DesignSystem.Colors.primaryOrange.opacity(0.4), radius: 30, y: 10)
 
-                Image(systemName: "bell.badge.fill")
+                Image(systemName: "sun.max.fill")
                     .font(.system(size: 70))
                     .foregroundColor(.white)
             }
             .modifier(PulseAnimation())
 
-            VStack(spacing: 16) {
+            VStack(spacing: DesignSystem.Spacing.md) {
                 Text("Never Miss\nWhat Matters")
                     .font(.system(size: 34, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .foregroundColor(.textPrimary)
 
                 Text("A trusted wake system that guarantees your loved ones can always reach you, even on silent.")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
             }
 
             Spacer()
 
             Button(action: onContinue) {
                 Text("Get Started")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("PrimaryOrange"))
-                    .cornerRadius(16)
+                    .primaryButtonStyle()
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 }
@@ -110,42 +166,47 @@ struct PhoneInputStepView: View {
     @State private var isLoading = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
                 Text("Enter Your\nPhone Number")
                     .font(.system(size: 28, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .foregroundColor(.textPrimary)
 
                 Text("We'll send you a verification code to set up your account.")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
-            HStack(spacing: 12) {
+            // Phone input
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Text("+1")
                     .font(.title3)
                     .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color("Surface"))
-                    .cornerRadius(12)
+                    .foregroundColor(.textPrimary)
+                    .padding(.horizontal, DesignSystem.Spacing.sm + 4)
+                    .padding(.vertical, DesignSystem.Spacing.sm + 2)
+                    .background(Color.appSurface)
+                    .cornerRadius(DesignSystem.Spacing.buttonRadius)
 
                 TextField("(555) 123-4567", text: $phoneNumber)
                     .keyboardType(.phonePad)
                     .font(.title3)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color("Surface"))
-                    .cornerRadius(12)
+                    .foregroundColor(.textPrimary)
+                    .padding(.horizontal, DesignSystem.Spacing.sm + 4)
+                    .padding(.vertical, DesignSystem.Spacing.sm + 2)
+                    .background(Color.appSurface)
+                    .cornerRadius(DesignSystem.Spacing.buttonRadius)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
 
             Spacer()
 
             Button(action: {
                 isLoading = true
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     isLoading = false
                     onContinue()
@@ -159,16 +220,12 @@ struct PhoneInputStepView: View {
                         Text("Continue")
                     }
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(phoneNumber.isEmpty ? Color.gray : Color("PrimaryOrange"))
-                .cornerRadius(16)
+                .primaryButtonStyle()
             }
             .disabled(phoneNumber.isEmpty)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .opacity(phoneNumber.isEmpty ? 0.6 : 1)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 }
@@ -180,19 +237,21 @@ struct OtpVerificationStepView: View {
     @FocusState private var focusedField: Int?
 
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
                 Text("Verify Your\nPhone Number")
                     .font(.system(size: 28, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .foregroundColor(.textPrimary)
 
                 Text("Enter the 6-digit code we sent to\n+1 (555) 123-4567")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
-            HStack(spacing: 12) {
+            // OTP input - flexible sizing
+            HStack(spacing: DesignSystem.Spacing.xs) {
                 ForEach(0..<6, id: \.self) { index in
                     OTPTextField(digit: $otpDigits[index])
                         .focused($focusedField, equals: index)
@@ -203,27 +262,22 @@ struct OtpVerificationStepView: View {
                         }
                 }
             }
-            .padding(.horizontal, 24)
-            .onAppear { focusedField = 0 }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
 
             Text("Resend code in 60s")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.textSecondary)
 
             Spacer()
 
             Button(action: onContinue) {
                 Text("Verify")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("PrimaryOrange"))
-                    .cornerRadius(16)
+                    .primaryButtonStyle()
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.bottom, DesignSystem.Spacing.lg)
         }
+        .onAppear { focusedField = 0 }
     }
 }
 
@@ -234,140 +288,122 @@ struct OTPTextField: View {
         TextField("", text: $digit)
             .keyboardType(.numberPad)
             .multilineTextAlignment(.center)
-            .font(.title)
+            .font(.title2)
             .fontWeight(.semibold)
+            .foregroundColor(.textPrimary)
             .frame(width: 48, height: 56)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(digit.isEmpty ? Color.gray.opacity(0.3) : Color("PrimaryOrange"), lineWidth: 2)
+                RoundedRectangle(cornerRadius: DesignSystem.Spacing.buttonRadius)
+                    .stroke(digit.isEmpty ? Color.appDivider : DesignSystem.Colors.primaryOrange, lineWidth: 2)
             )
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(digit.isEmpty ? Color("Surface") : Color("PrimaryOrange").opacity(0.05))
+                RoundedRectangle(cornerRadius: DesignSystem.Spacing.buttonRadius)
+                    .fill(digit.isEmpty ? Color.appSurface : DesignSystem.Colors.primaryOrange.opacity(0.05))
             )
     }
 }
 
-// MARK: - Notifications Step
-struct NotificationsStepView: View {
+// MARK: - Consolidated Permissions Step
+struct PermissionsStepView: View {
     let onContinue: () -> Void
     @State private var notificationsEnabled = true
+    @State private var criticalAlertsEnabled = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
-                Text("Enable\nNotifications")
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                Text("Enable\nPermissions")
                     .font(.system(size: 28, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .foregroundColor(.textPrimary)
 
-                Text("Wake Up Sunshine needs to send you notifications so you can receive wake alerts from your trusted contacts.")
+                Text("Allow these permissions for guaranteed wake alerts.")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
-            HStack(spacing: 16) {
-                Image(systemName: "bell.badge.fill")
-                    .font(.title)
-                    .foregroundColor(Color("Secondary"))
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                // Notifications
+                PermissionToggle(
+                    icon: "bell.badge.fill",
+                    iconColor: DesignSystem.Colors.primaryOrange,
+                    title: "Notifications",
+                    subtitle: "Receive wake alerts and updates",
+                    isEnabled: $notificationsEnabled
+                )
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Notifications")
-                        .font(.headline)
-                    Text("Receive wake alerts and updates")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Toggle("", isOn: $notificationsEnabled)
-                    .labelsHidden()
-                    .tint(Color("PrimaryOrange"))
+                // Critical Alerts
+                PermissionToggle(
+                    icon: "exclamationmark.triangle.fill",
+                    iconColor: DesignSystem.Colors.warning,
+                    title: "Critical Alerts",
+                    subtitle: "Wake up even on silent/DND",
+                    isEnabled: $criticalAlertsEnabled
+                )
             }
-            .padding(20)
-            .background(Color("Surface"))
-            .cornerRadius(16)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+
+            // Info box
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(.textSecondary)
+
+                Text("Critical Alerts will always play at full volume, regardless of your phone's settings.")
+                    .font(.caption)
+                    .foregroundColor(.textSecondary)
+            }
+            .padding(DesignSystem.Spacing.md)
+            .background(Color.appSurface)
+            .cornerRadius(DesignSystem.Spacing.buttonRadius)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
 
             Spacer()
 
             Button(action: onContinue) {
-                Text("Continue")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("PrimaryOrange"))
-                    .cornerRadius(16)
+                Text(criticalAlertsEnabled ? "Enable Critical Alerts" : "Continue")
+                    .primaryButtonStyle()
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 }
 
-// MARK: - Critical Alerts Step
-struct CriticalAlertsStepView: View {
-    let onContinue: () -> Void
+struct PermissionToggle: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    @Binding var isEnabled: Bool
 
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
-                Text("Critical Alerts")
-                    .font(.system(size: 28, weight: .bold))
-                    .multilineTextAlignment(.center)
-
-                Text("This is what makes Wake Up Sunshine special. Critical Alerts will always wake you up, even if your phone is on silent or Do Not Disturb is on.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            VStack(spacing: 16) {
+        Toggle(isOn: $isEnabled) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 ZStack {
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color("Error"), Color("Error").opacity(0.8)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 80, height: 80)
+                        .fill(iconColor.opacity(0.1))
+                        .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
 
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(.white)
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundColor(iconColor)
                 }
 
-                Text("Guaranteed Wake")
-                    .font(.headline)
-
-                Text("Louder than normal alerts. Cannot be silenced. Essential for emergencies.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.textPrimary)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.textSecondary)
+                }
             }
-            .padding(24)
-            .background(Color("Surface"))
-            .cornerRadius(16)
-            .padding(.horizontal, 24)
-
-            Spacer()
-
-            Button(action: onContinue) {
-                Text("Enable Critical Alerts")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("PrimaryOrange"))
-                    .cornerRadius(16)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
         }
+        .tint(DesignSystem.Colors.success)
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
     }
 }
 
@@ -376,21 +412,22 @@ struct ReadyStepView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: DesignSystem.Spacing.xl) {
             Spacer()
 
+            // Success animation
             ZStack {
                 // Pulse circles
                 ForEach(0..<3) { index in
                     Circle()
-                        .stroke(Color("Success"), lineWidth: 3)
+                        .stroke(DesignSystem.Colors.success, lineWidth: 3)
                         .frame(width: CGFloat(200 + index * 60), height: CGFloat(200 + index * 60))
                         .opacity(index == 0 ? 1 : 0)
                         .modifier(PulseCircleAnimation(delay: Double(index) * 0.5))
                 }
 
                 Circle()
-                    .fill(Color("Success"))
+                    .fill(DesignSystem.Colors.success)
                     .frame(width: 80, height: 80)
 
                 Image(systemName: "checkmark")
@@ -398,36 +435,34 @@ struct ReadyStepView: View {
                     .foregroundColor(.white)
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
                 Text("You're All Set!")
                     .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.textPrimary)
 
                 Text("Now add trusted contacts who can wake you up when it matters most.")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
             Spacer()
 
             Button(action: {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
                 appState.completeOnboarding()
             }) {
                 Text("Start Using Wake Up Sunshine")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("PrimaryOrange"))
-                    .cornerRadius(16)
+                    .primaryButtonStyle()
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 }
 
-// MARK: - Animations
+// MARK: - Spring-based Animations
 struct PulseAnimation: ViewModifier {
     @State private var isAnimating = false
 
@@ -435,8 +470,7 @@ struct PulseAnimation: ViewModifier {
         content
             .scaleEffect(isAnimating ? 1.05 : 1.0)
             .animation(
-                .easeInOut(duration: 1.5)
-                .repeatForever(autoreverses: true),
+                .spring(response: 2, dampingFraction: 0.6).repeatForever(autoreverses: true),
                 value: isAnimating
             )
             .onAppear { isAnimating = true }
@@ -452,9 +486,7 @@ struct PulseCircleAnimation: ViewModifier {
             .scaleEffect(isAnimating ? 1.5 : 1.0)
             .opacity(isAnimating ? 0 : 1)
             .animation(
-                .easeOut(duration: 2)
-                .repeatForever(autoreverses: false)
-                .delay(delay),
+                .spring(response: 2, dampingFraction: 0.8).repeatForever(autoreverses: false).delay(delay),
                 value: isAnimating
             )
             .onAppear { isAnimating = true }

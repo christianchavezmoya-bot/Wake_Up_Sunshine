@@ -2,37 +2,56 @@ import SwiftUI
 
 struct HistoryView: View {
     @StateObject private var viewModel = HistoryViewModel()
+    @State private var isRefreshing = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color("Background").ignoresSafeArea()
+                Color.appBackground.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    LazyVStack(spacing: DesignSystem.Spacing.lg, pinnedViews: .sectionHeaders) {
                         ForEach(viewModel.groupedHistory.keys.sorted().reversed(), id: \.self) { date in
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(formatDateHeader(date))
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 24)
-
-                                VStack(spacing: 8) {
-                                    ForEach(viewModel.groupedHistory[date] ?? []) { item in
-                                        HistoryItemRow(item: item)
-                                    }
+                            Section {
+                                ForEach(viewModel.groupedHistory[date] ?? []) { item in
+                                    HistoryItemRow(item: item)
+                                        .transition(.scale.combined(with: .opacity).animation(.springStandard))
                                 }
-                                .padding(.horizontal, 24)
+                            } header: {
+                                DateHeaderView(date: date)
                             }
                         }
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 100)
+                    .padding(.top, DesignSystem.Spacing.md)
+                    .padding(.bottom, DesignSystem.Spacing.xxl)
+                }
+                .refreshable {
+                    // Pull-to-refresh action
+                    isRefreshing = true
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    isRefreshing = false
                 }
             }
             .navigationTitle("History")
         }
+    }
+}
+
+// MARK: - Date Header View
+struct DateHeaderView: View {
+    let date: Date
+
+    var body: some View {
+        HStack {
+            Text(formatDateHeader(date))
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.textSecondary)
+            Spacer()
+        }
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+        .padding(.vertical, DesignSystem.Spacing.xs)
+        .background(Color.appBackground)
     }
 
     private func formatDateHeader(_ date: Date) -> String {
@@ -54,11 +73,12 @@ struct HistoryItemRow: View {
     let item: HistoryItem
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            // Avatar
             ZStack {
                 Circle()
                     .fill(Color(hex: item.avatarColor))
-                    .frame(width: 48, height: 48)
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
 
                 Text(item.name.prefix(1).uppercased())
                     .font(.headline)
@@ -66,32 +86,43 @@ struct HistoryItemRow: View {
                     .foregroundColor(.white)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+            // Info
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                HStack(spacing: DesignSystem.Spacing.xxs) {
+                    Text(item.title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.textPrimary)
+
+                    // Direction indicator
+                    Image(systemName: item.isIncoming ? "arrow.down" : "arrow.up")
+                        .font(.caption2)
+                        .foregroundColor(.textTertiary)
+                }
 
                 if let message = item.message {
                     Text(message)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.textSecondary)
                         .lineLimit(1)
                 }
             }
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
+            // Time and Status
+            VStack(alignment: .trailing, spacing: DesignSystem.Spacing.xxs) {
                 Text(formatTime(item.timestamp))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textTertiary)
 
                 StatusBadge(status: item.status)
             }
         }
-        .padding(16)
-        .background(Color("Surface"))
-        .cornerRadius(12)
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
     }
 
     private func formatTime(_ date: Date) -> String {
@@ -109,8 +140,8 @@ struct StatusBadge: View {
         Text(status.displayName)
             .font(.caption2)
             .fontWeight(.semibold)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, DesignSystem.Spacing.xs + 2)
+            .padding(.vertical, DesignSystem.Spacing.xxs)
             .background(status.backgroundColor)
             .foregroundColor(status.foregroundColor)
             .clipShape(Capsule())
@@ -145,19 +176,19 @@ struct HistoryItem: Identifiable {
 
         var backgroundColor: Color {
             switch self {
-            case .confirmed: return Color("Success").opacity(0.1)
-            case .delivered: return Color("Secondary").opacity(0.1)
-            case .dismissed: return Color("Error").opacity(0.1)
-            case .pending: return Color.gray.opacity(0.1)
+            case .confirmed: return DesignSystem.Colors.successLight
+            case .delivered: return DesignSystem.Colors.primaryOrange.opacity(0.1)
+            case .dismissed: return DesignSystem.Colors.errorLight
+            case .pending: return DesignSystem.Colors.surfaceLight.opacity(0.5)
             }
         }
 
         var foregroundColor: Color {
             switch self {
-            case .confirmed: return Color("Success")
-            case .delivered: return Color("Secondary")
-            case .dismissed: return Color("Error")
-            case .pending: return .gray
+            case .confirmed: return DesignSystem.Colors.success
+            case .delivered: return DesignSystem.Colors.primaryOrange
+            case .dismissed: return DesignSystem.Colors.error
+            case .pending: return .textSecondary
             }
         }
     }
@@ -173,14 +204,8 @@ class HistoryViewModel: ObservableObject {
 
     func loadMockData() {
         let calendar = Calendar.current
-
-        // Today
         let today = calendar.startOfDay(for: Date())
-
-        // Yesterday
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-
-        // This week
         let thisWeek = calendar.date(byAdding: .day, value: -3, to: today)!
 
         groupedHistory = [

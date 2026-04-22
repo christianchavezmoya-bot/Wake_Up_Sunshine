@@ -8,60 +8,18 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color("Background").ignoresSafeArea()
+                Color.appBackground.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: DesignSystem.Spacing.lg) {
                         // Profile Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Profile")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 24)
-
-                            Button(action: {}) {
-                                HStack(spacing: 16) {
-                                    Circle()
-                                        .fill(Color("PrimaryOrange"))
-                                        .frame(width: 52, height: 52)
-                                        .overlay(
-                                            Text("A")
-                                                .font(.title3)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.white)
-                                        )
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Alex Thompson")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-                                        Text("+1 (555) 123-4567")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(16)
-                                .background(Color("Surface"))
-                                .cornerRadius(12)
-                            }
-                            .padding(.horizontal, 24)
+                        SettingsSection(title: "Profile") {
+                            ProfileRow()
                         }
 
                         // Devices Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Devices")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 24)
-
-                            VStack(spacing: 8) {
+                        SettingsSection(title: "Devices") {
+                            VStack(spacing: DesignSystem.Spacing.xs) {
                                 DeviceRow(
                                     icon: "iphone",
                                     name: "iPhone 15 Pro",
@@ -76,97 +34,95 @@ struct SettingsView: View {
                                     isOnline: false
                                 )
                             }
-                            .padding(.horizontal, 24)
                         }
 
                         // Notifications Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Notifications")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 24)
-
-                            VStack(spacing: 8) {
+                        SettingsSection(title: "Notifications") {
+                            VStack(spacing: DesignSystem.Spacing.xs) {
                                 SettingsRow(
                                     icon: "bell.badge.fill",
-                                    iconColor: Color("PrimaryOrange"),
+                                    iconColor: DesignSystem.Colors.primaryOrange,
                                     title: "Critical Alerts",
                                     subtitle: "Always wake you up"
                                 ) {
                                     Toggle("", isOn: $criticalAlertsEnabled)
                                         .labelsHidden()
-                                        .tint(Color("Success"))
+                                        .tint(DesignSystem.Colors.success)
                                 }
 
                                 SettingsRow(
                                     icon: "speaker.wave.3.fill",
-                                    iconColor: Color("Secondary"),
+                                    iconColor: .textSecondary,
                                     title: "Alarm Sound",
                                     subtitle: "Siren (Loud)"
                                 ) {
                                     Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.textTertiary)
                                 }
 
-                                Button(action: testAlarm) {
-                                    SettingsRow(
-                                        icon: "play.circle.fill",
-                                        iconColor: Color("Success"),
-                                        title: "Test Alarm",
-                                        subtitle: "Tap to preview sound"
-                                    ) {
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(.secondary)
-                                    }
+                                SettingsRow(
+                                    icon: "play.circle.fill",
+                                    iconColor: DesignSystem.Colors.success,
+                                    title: "Test Alarm",
+                                    subtitle: "Tap to preview sound"
+                                ) {
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.textTertiary)
+                                }
+                                .onTapGesture {
+                                    testAlarm()
                                 }
                             }
-                            .padding(.horizontal, 24)
                         }
 
                         // Privacy Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Privacy")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 24)
-
-                            Button(action: {}) {
-                                SettingsRow(
-                                    icon: "hand.raised.fill",
-                                    iconColor: Color("Secondary"),
-                                    title: "Blocked Contacts",
-                                    subtitle: "Manage blocked users"
-                                ) {
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.secondary)
-                                }
+                        SettingsSection(title: "Privacy") {
+                            SettingsRow(
+                                icon: "hand.raised.fill",
+                                iconColor: .textSecondary,
+                                title: "Blocked Contacts",
+                                subtitle: "Manage blocked users"
+                            ) {
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.textTertiary)
                             }
-                            .padding(.horizontal, 24)
                         }
 
-                        // Danger Zone
-                        VStack(alignment: .leading, spacing: 12) {
+                        // Danger Zone - With Red Border
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            Text("Danger Zone")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.error)
+                                .padding(.horizontal, DesignSystem.Spacing.lg)
+
                             Button(action: {}) {
-                                HStack(spacing: 12) {
+                                HStack(spacing: DesignSystem.Spacing.sm) {
                                     Image(systemName: "trash.fill")
-                                        .foregroundColor(Color("Error"))
+                                        .font(.body)
+                                        .foregroundColor(DesignSystem.Colors.error)
 
                                     Text("Delete Account")
                                         .font(.subheadline)
-                                        .foregroundColor(Color("Error"))
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(DesignSystem.Colors.error)
+
+                                    Spacer()
                                 }
-                                .padding(16)
+                                .padding(DesignSystem.Spacing.md)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color("Surface"))
-                                .cornerRadius(12)
+                                .background(Color.appCard)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.Spacing.buttonRadius)
+                                        .strokeBorder(DesignSystem.Colors.error.opacity(0.3), lineWidth: 1)
+                                )
+                                .cornerRadius(DesignSystem.Spacing.buttonRadius)
                             }
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
                         }
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 100)
+                    .padding(.top, DesignSystem.Spacing.md)
+                    .padding(.bottom, DesignSystem.Spacing.xxl)
                 }
             }
             .navigationTitle("Settings")
@@ -183,6 +139,60 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Settings Section
+struct SettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.textSecondary)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+
+            content()
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+        }
+    }
+}
+
+// MARK: - Profile Row
+struct ProfileRow: View {
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            Circle()
+                .fill(DesignSystem.Colors.primaryOrange)
+                .frame(width: DesignSystem.TouchTargets.minimum + 8, height: DesignSystem.TouchTargets.minimum + 8)
+                .overlay(
+                    Text("A")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                )
+
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                Text("Alex Thompson")
+                    .font(.headline)
+                    .foregroundColor(.textPrimary)
+                Text("+1 (555) 123-4567")
+                    .font(.subheadline)
+                    .foregroundColor(.textSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.body)
+                .foregroundColor(.textTertiary)
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
+    }
+}
+
 // MARK: - Device Row
 struct DeviceRow: View {
     let icon: String
@@ -191,31 +201,32 @@ struct DeviceRow: View {
     let isOnline: Bool
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color("Secondary").opacity(0.1))
-                    .frame(width: 44, height: 44)
+                RoundedRectangle(cornerRadius: DesignSystem.Spacing.xs)
+                    .fill(DesignSystem.Colors.primaryOrange.opacity(0.1))
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
 
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(Color("Secondary"))
+                    .foregroundColor(DesignSystem.Colors.primaryOrange)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(name)
                     .font(.headline)
+                    .foregroundColor(.textPrimary)
 
-                HStack(spacing: 6) {
+                HStack(spacing: DesignSystem.Spacing.xxs) {
                     if isOnline {
                         Circle()
-                            .fill(Color("Success"))
+                            .fill(DesignSystem.Colors.success)
                             .frame(width: 8, height: 8)
                         Text("Active")
-                            .foregroundColor(Color("Success"))
+                            .foregroundColor(DesignSystem.Colors.success)
                     } else {
                         Text(status)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.textSecondary)
                     }
                 }
                 .font(.caption)
@@ -224,11 +235,12 @@ struct DeviceRow: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
+                .font(.body)
+                .foregroundColor(.textTertiary)
         }
-        .padding(16)
-        .background(Color("Surface"))
-        .cornerRadius(12)
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
     }
 }
 
@@ -241,33 +253,34 @@ struct SettingsRow<Accessory: View>: View {
     @ViewBuilder let accessory: () -> Accessory
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: DesignSystem.Spacing.xs)
                     .fill(iconColor.opacity(0.1))
-                    .frame(width: 44, height: 44)
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
 
                 Image(systemName: icon)
                     .font(.title3)
                     .foregroundColor(iconColor)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(title)
                     .font(.headline)
+                    .foregroundColor(.textPrimary)
 
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
             }
 
             Spacer()
 
             accessory()
         }
-        .padding(16)
-        .background(Color("Surface"))
-        .cornerRadius(12)
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
     }
 }
 

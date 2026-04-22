@@ -6,44 +6,30 @@ struct ContactsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color("Background").ignoresSafeArea()
+                Color.appBackground.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Active Contacts
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("People Who Can Wake Me")
-                                .font(.headline)
-                                .padding(.horizontal, 24)
-
-                            VStack(spacing: 12) {
-                                ForEach(viewModel.activeContacts) { contact in
-                                    ContactListRow(contact: contact)
-                                }
-                            }
-                            .padding(.horizontal, 24)
+                    VStack(spacing: DesignSystem.Spacing.lg) {
+                        // Active Contacts Section
+                        if !viewModel.activeContacts.isEmpty {
+                            ContactsSection(
+                                title: "People Who Can Wake Me",
+                                contacts: viewModel.activeContacts,
+                                rowType: .active
+                            )
                         }
 
-                        // Pending Requests
+                        // Pending Requests Section
                         if !viewModel.pendingContacts.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Pending Requests")
-                                    .font(.headline)
-                                    .padding(.horizontal, 24)
-
-                                VStack(spacing: 12) {
-                                    ForEach(viewModel.pendingContacts) { contact in
-                                        PendingContactRow(contact: contact) { approved in
-                                            viewModel.handlePermission(contact: contact, approved: approved)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                            }
+                            ContactsSection(
+                                title: "Pending Requests",
+                                contacts: viewModel.pendingContacts,
+                                rowType: .pending
+                            )
                         }
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 100)
+                    .padding(.top, DesignSystem.Spacing.md)
+                    .padding(.bottom, DesignSystem.Spacing.xxl)
                 }
             }
             .navigationTitle("Contacts")
@@ -51,104 +37,136 @@ struct ContactsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {}) {
                         Image(systemName: "plus")
-                            .foregroundColor(Color("PrimaryOrange"))
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(DesignSystem.Colors.primaryOrange)
                     }
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
                 }
             }
         }
     }
 }
 
-// MARK: - Contact List Row
-struct ContactListRow: View {
-    let contact: Contact
+// MARK: - Contacts Section
+struct ContactsSection: View {
+    let title: String
+    let contacts: [Contact]
+    let rowType: ContactRowType
 
     var body: some View {
-        HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.textPrimary)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+
+            VStack(spacing: DesignSystem.Spacing.xs) {
+                ForEach(contacts) { contact in
+                    ContactRow(
+                        contact: contact,
+                        rowType: rowType
+                    )
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+        }
+    }
+}
+
+// MARK: - Contact Row Type
+enum ContactRowType {
+    case active
+    case pending
+}
+
+// MARK: - Contact Row
+struct ContactRow: View {
+    let contact: Contact
+    let rowType: ContactRowType
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            // Avatar
             ZStack {
                 Circle()
-                    .fill(Color(hex: contact.avatarColor))
-                    .frame(width: 52, height: 52)
+                    .fill(Color(hex: contact.avatarColor).opacity(rowType == .pending ? 0.3 : 1.0))
+                    .frame(width: DesignSystem.TouchTargets.minimum + 8, height: DesignSystem.TouchTargets.minimum + 8)
 
                 Text(contact.displayName.prefix(1).uppercased())
                     .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(rowType == .pending ? Color(hex: contact.avatarColor) : .white)
+            }
+
+            // Info
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                Text(contact.displayName)
+                    .font(.headline)
+                    .foregroundColor(.textPrimary)
+
+                Text(rowType == .active ? "Can wake me anytime" : "Wants to wake you")
+                    .font(.caption)
+                    .foregroundColor(.textSecondary)
+            }
+
+            Spacer()
+
+            // Action
+            if rowType == .active {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(DesignSystem.Colors.success)
+            } else {
+                PendingActions()
+            }
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(Color.appCard)
+        .cornerRadius(DesignSystem.Spacing.buttonRadius)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if rowType == .active {
+                Button(role: .destructive) {
+                    // Delete action
+                } label: {
+                    Label("Remove", systemImage: "trash")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Pending Actions with Larger Touch Targets
+struct PendingActions: View {
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.xs) {
+            // Deny Button
+            Button(action: {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }) {
+                Image(systemName: "xmark")
+                    .font(.headline)
                     .foregroundColor(.white)
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
+                    .background(DesignSystem.Colors.error)
+                    .clipShape(Circle())
             }
+            .buttonStyle(ScaleButtonStyle())
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(contact.displayName)
+            // Approve Button
+            Button(action: {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                impactFeedback.impactOccurred()
+            }) {
+                Image(systemName: "checkmark")
                     .font(.headline)
-
-                Text("Can wake me anytime")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white)
+                    .frame(width: DesignSystem.TouchTargets.minimum, height: DesignSystem.TouchTargets.minimum)
+                    .background(DesignSystem.Colors.success)
+                    .clipShape(Circle())
             }
-
-            Spacer()
-
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title2)
-                .foregroundColor(Color("Success"))
+            .buttonStyle(ScaleButtonStyle())
         }
-        .padding(16)
-        .background(Color("Surface"))
-        .cornerRadius(12)
-    }
-}
-
-// MARK: - Pending Contact Row
-struct PendingContactRow: View {
-    let contact: Contact
-    let onAction: (Bool) -> Void
-
-    var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: contact.avatarColor).opacity(0.3))
-                    .frame(width: 52, height: 52)
-
-                Text(contact.displayName.prefix(1).uppercased())
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: contact.avatarColor))
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(contact.displayName)
-                    .font(.headline)
-
-                Text("Wants to wake you")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-
-            HStack(spacing: 8) {
-                Button(action: { onAction(false) }) {
-                    Image(systemName: "xmark")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Color("Error"))
-                        .clipShape(Circle())
-                }
-
-                Button(action: { onAction(true) }) {
-                    Image(systemName: "checkmark")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Color("Success"))
-                        .clipShape(Circle())
-                }
-            }
-        }
-        .padding(16)
-        .background(Color("Surface"))
-        .cornerRadius(12)
     }
 }
 
