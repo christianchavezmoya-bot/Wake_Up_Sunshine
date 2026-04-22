@@ -1,0 +1,23 @@
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[studio]
+enabled = true
+
+[inbucket]
+enabled = true
+
+[auth]
+enabled = true
+
+[edge_runtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[analytics]
+enabled = true

@@ -104,6 +104,27 @@ Wake_Up_Sunshine/
    - Copy `.env.example` to `.env`
    - Fill in your Supabase and Apple credentials
 
+### Supabase Configuration
+
+**Project URL:** `https://jehouatjcfcxjjuowzbd.supabase.co`
+
+**Edge Functions Deployed:**
+| Function | URL |
+|----------|-----|
+| send-wake | `https://jehouatjcfcxjjuowzbd.supabase.co/functions/v1/send-wake` |
+| wake-response | `https://jehouatjcfcxjjuowzbd.supabase.co/functions/v1/wake-response` |
+| get-contacts | `https://jehouatjcfcxjjuowzbd.supabase.co/functions/v1/get-contacts` |
+| get-history | `https://jehouatjcfcxjjuowzbd.supabase.co/functions/v1/get-history` |
+
+**Database Tables:**
+- `users` - User accounts with phone numbers
+- `user_devices` - Registered devices with push tokens
+- `wake_permissions` - Trust relationships between users
+- `wake_requests` - Wake alert records
+- `rate_limits` - Anti-abuse protection
+
+**RLS Policies:** All tables have Row Level Security enabled with proper access control.
+
 ## Backend
 
 ### Database Schema

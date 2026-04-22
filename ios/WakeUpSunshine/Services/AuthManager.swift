@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 
 class AuthManager: ObservableObject {
     @Published var isAuthenticated: Bool = false
@@ -6,7 +7,8 @@ class AuthManager: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: String?
 
-    private let apiClient = APIClient.shared
+    private let supabase = SupabaseManager.shared.client
+    private let supabaseManager = SupabaseManager.shared
 
     // MARK: - Phone Authentication
     func signIn(phoneNumber: String) {
