@@ -305,63 +305,134 @@ async function generateAPNsJWT(keyId: string, teamId: string, privateKey: string
   return `${signingInput}.${signatureBase64}`;
 }
 
-// Android FCM notification
+// Android FCM notification using v1 API (OAuth2)
 async function sendFCMNotification(deviceToken: string, payload: any) {
   try {
-    const fcmServerKey = Deno.env.get("FCM_SERVER_KEY");
-    if (!fcmServerKey) {
-      console.log("FCM server key not configured");
+    const fcmProjectId = Deno.env.get("FCM_PROJECT_ID");
+    const fcmServiceAccount = Deno.env.get("FCM_SERVICE_ACCOUNT");
+
+    if (!fcmProjectId || !fcmServiceAccount) {
+      console.log("FCM v1 credentials not configured");
       return false;
     }
 
+    // Get OAuth2 access token from service account
+    const accessToken = await getFCMAccessToken(fcmServiceAccount);
+
     const fcmPayload = {
-      to: deviceToken,
-      priority: "high",
-      data: {
-        requestId: payload.requestId,
-        senderId: payload.senderId,
-        senderName: payload.senderName,
-        message: payload.message || "",
-        urgency: payload.urgency,
-        type: "wake_alarm",
-      },
-      notification: {
-        title: "Wake Up! 🌅",
-        body: `${payload.senderName} is trying to wake you`,
-        sound: "default",
-        tag: "wake_alarm",
-        priority: "max",
-      },
-      android: {
-        priority: "high",
+      message: {
+        token: deviceToken,
+        data: {
+          requestId: payload.requestId,
+          senderId: payload.senderId,
+          senderName: payload.senderName,
+          message: payload.message || "",
+          urgency: payload.urgency,
+          type: "wake_alarm",
+        },
         notification: {
-          channel_id: "wake_alarm_channel",
-          sound: "default",
-          priority: "max",
-          default_vibrate_timings": true,
+          title: "Wake Up! 🌅",
+          body: `${payload.senderName} is trying to wake you`,
+        },
+        android: {
+          priority: "high",
+          notification: {
+            channel_id: "wake_alarm_channel",
+            sound: "default",
+            priority: "max",
+            default_vibrate_timings: true,
+            default_sound: true,
+          },
         },
       },
     };
 
-    const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `key=${fcmServerKey}`,
-      },
-      body: JSON.stringify(fcmPayload),
-    });
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${fcmProjectId}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(fcmPayload),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`FCM error: ${response.status} - ${errorText}`);
+      console.error(`FCM v1 error: ${response.status} - ${errorText}`);
     }
 
     return response.ok;
   } catch (error) {
-    console.error("FCM notification failed:", error);
+    console.error("FCM v1 notification failed:", error);
     return false;
   }
+}
+
+// Get OAuth2 access token for FCM v1 API
+async function getFCMAccessToken(serviceAccountJson: string): Promise<string> {
+  const serviceAccount = JSON.parse(serviceAccountJson);
+
+  // Create JWT for OAuth2
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claims = {
+    iss: serviceAccount.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const encoder = new TextEncoder();
+  const headerBase64 = btoa(JSON.stringify(header)).replace(/=/g, "");
+  const claimsBase64 = btoa(JSON.stringify(claims)).replace(/=/g, "");
+  const signingInput = `${headerBase64}.${claimsBase64}`;
+
+  // Import private key
+  const privateKeyPem = serviceAccount.private_key
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\n/g, "");
+
+  const keyData = `-----BEGIN PRIVATE KEY-----\n${privateKeyPem}\n-----END PRIVATE KEY-----`;
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    hexToBytes(privateKeyPem.replace(/[^0-9a-f]/gi, "")),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    cryptoKey,
+    encoder.encode(signingInput)
+  );
+
+  const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, "");
+  const jwt = `${signingInput}.${signatureBase64}`;
+
+  // Exchange JWT for access token
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+  });
+
+  const tokenData = await tokenResponse.json();
+  return tokenData.access_token;
+}
+
+// Helper to convert hex string to bytes
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
 }
 
 async function updateRateLimit(supabase: any, senderId: string, targetId: string) {
