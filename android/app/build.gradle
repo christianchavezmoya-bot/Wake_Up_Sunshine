@@ -71,8 +71,8 @@ dependencies {
     // Supabase
     implementation 'io.supabase:supabase-kt:2.1.0'
 
-    // Firebase
-    implementation platform('com.google.firebase:firebase-bom:32.7.1')
+    // Firebase BoM (Bill of Materials) - manages all Firebase versions
+    implementation platform('com.google.firebase:firebase-bom:34.12.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
 
     // Hilt for DI
