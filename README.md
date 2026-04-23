@@ -1,13 +1,13 @@
 # Wake Up Sunshine
 
-A trusted-person alarm system that allows one user to trigger a guaranteed wake-up alarm on another user's phone, even when the phone is on silent or Do Not Disturb is enabled.
+A **cross-platform trusted-person alarm system** that allows one user to trigger a guaranteed wake-up alarm on another user's phone, even when the phone is on silent or Do Not Disturb is enabled.
 
 ## Features
 
-- **Guaranteed Wake-Up** - Critical Alerts ensure the alarm plays even on silent mode
+- **Guaranteed Wake-Up** - Critical Alerts (iOS) / Full-Screen Intent (Android) override silent mode
 - **Permission-Based** - Only trusted contacts can wake you
 - **Real-Time Status** - See when your wake alert is delivered and confirmed
-- **Multi-Device Support** - Works across iPhone, iPad, and Apple Watch
+- **Cross-Platform** - Works on iOS and Android
 - **Privacy Focused** - No data sharing, all permissions are explicit
 
 ## Architecture
@@ -19,15 +19,20 @@ A trusted-person alarm system that allows one user to trigger a guaranteed wake-
 │                                                             │
 │  SENDER                    BACKEND                 RECEIVER  │
 │  ┌─────────┐              ┌─────────┐            ┌────────┐ │
-│  │  App    │──POST /wake──▶│ Supabase│───APNs────▶│  App   │ │
-│  │  UI     │◀─status──────│ + Edge  │◀──ack─────│  Alarm │ │
-│  └─────────┘              │ Functions│            └────────┘ │
-│                            └─────────┘                       │
+│  │  App    │──POST /wake──▶│ Supabase│────────────▶│  App   │ │
+│  │  (iOS/  │◀─status──────│ + Edge  │◀──ack──────│(iOS/   │ │
+│  │ Android)│              │ Functions│            │Android)│ │
+│  └─────────┘              └─────────┘            └────────┘ │
+│                                                             │
+│  PUSH DELIVERY:                                            │
+│  • iOS → APNs (Apple Push Notification Service)            │
+│  • Android → FCM (Firebase Cloud Messaging)                │
 │                                                             │
 │  KEY COMPONENTS:                                            │
-│  • Supabase (Auth, Database, Realtime)                       │
-│  • Apple Push Notification Service (APNs)                   │
-│  • Critical Alerts Entitlement                              │
+│  • Supabase (Auth, Database, Realtime)                      │
+│  • APNs for iOS / FCM for Android                          │
+│  • Critical Alerts Entitlement (iOS)                       │
+│  • Full-Screen Intent (Android)                            │
 │  • Row Level Security (RLS)                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -50,6 +55,18 @@ Wake_Up_Sunshine/
 │   │   └── Shared/               # Extensions & utilities
 │   └── project.yml               # XcodeGen configuration
 │
+├── android/                      # Android App (Kotlin + Jetpack Compose)
+│   ├── app/
+│   │   └── src/main/
+│   │       ├── kotlin/com/wakeupsunshine/
+│   │       │   ├── data/         # Supabase client
+│   │       │   ├── service/     # FCM messaging service
+│   │       │   ├── receiver/    # Boot & alarm receivers
+│   │       │   └── ui/          # Compose screens
+│   │       ├── res/             # Resources
+│   │       └── AndroidManifest.xml
+│   └── build.gradle
+│
 ├── backend/                      # Supabase Backend
 │   ├── supabase/
 │   │   ├── migrations/           # Database schema
@@ -62,7 +79,8 @@ Wake_Up_Sunshine/
 │
 ├── docs/                         # Documentation
 │   ├── API.md                    # API documentation
-│   └── SPEC.md                   # Design specification
+│   ├── SPEC.md                   # Design specification
+│   └── CROSS_PLATFORM_SYNC.md    # iOS/Android sync guide
 │
 └── README.md                     # This file
 ```
@@ -71,11 +89,11 @@ Wake_Up_Sunshine/
 
 ### Prerequisites
 
-- Xcode 15+
-- XcodeGen (`brew install xcodegen`)
-- Node.js 18+ (for Supabase CLI)
-- Supabase account
-- Apple Developer Account (for Critical Alerts)
+| Platform | Requirements |
+|----------|--------------|
+| **iOS** | Xcode 15+, Apple Developer Account (for Critical Alerts), APNs Certificate |
+| **Android** | Android Studio Hedgehog+, Firebase Project, google-services.json |
+| **Backend** | Node.js 18+, Supabase CLI, Supabase Account |
 
 ### Setup
 
@@ -92,17 +110,33 @@ Wake_Up_Sunshine/
    open WakeUpSunshine.xcodeproj
    ```
 
-3. **Setup Supabase backend**
+3. **Setup Android app**
+   ```bash
+   cd android
+   # Add your google-services.json from Firebase Console first!
+   ./gradlew assembleDebug
+   ```
+
+4. **Setup Supabase backend**
    ```bash
    cd backend
    supabase login
-   supabase link --project-ref YOUR_PROJECT_REF
+   supabase link --project-ref jehouatjcfcxjjuowzbd
    supabase db push
    ```
 
-4. **Configure environment variables**
-   - Copy `.env.example` to `.env`
-   - Fill in your Supabase and Apple credentials
+### Platform-Specific Setup
+
+#### iOS Critical Alerts
+1. Request Critical Alerts entitlement from Apple Developer
+2. Configure in Xcode: Capabilities → Push Notifications → Critical Alerts
+3. Use `UNNotificationAuthorizationOptions.criticalAlert` when requesting permission
+
+#### Android Firebase
+1. Create Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Add Android app with package name: `com.wakeupsunshine.app`
+3. Download `google-services.json` and place in `android/app/`
+4. Enable FCM in Firebase Console
 
 ### Supabase Configuration
 
@@ -149,7 +183,7 @@ Wake_Up_Sunshine/
 
 ### Features
 
-- **Onboarding Flow** - 6-step sign-up with permissions
+- **Onboarding Flow** - 5-step sign-up with permissions
 - **Home Screen** - Grid of trusted contacts with wake buttons
 - **Wake Alert** - Full-screen alarm with confirm/snooze
 - **History** - Timeline of past wake alerts
@@ -160,6 +194,35 @@ Wake_Up_Sunshine/
 1. Request Critical Alerts entitlement from Apple
 2. Configure in Xcode Capabilities
 3. Use `UNNotificationAuthorizationOptions.criticalAlert`
+
+## Android App
+
+### Features
+
+- **Wake Alarm Screen** - Full-screen alarm with dismiss/snooze
+- **FCM Messaging** - Firebase Cloud Messaging integration
+- **Notification Channels** - High-priority channel for wake alarms
+- **Boot Receiver** - Reschedules alarms after reboot
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `WakeMessagingService` | Handles FCM push notifications |
+| `AlarmActivity` | Full-screen alarm display |
+| `BootReceiver` | Reschedules after device boot |
+| `NotificationChannel` | Bypasses Do Not Disturb |
+
+### Android Permissions
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.VIBRATE" />
+<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+```
 
 ## Security
 

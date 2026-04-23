@@ -26,7 +26,8 @@ CREATE TABLE public.user_devices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     device_token TEXT NOT NULL,
-    device_type VARCHAR(20) DEFAULT 'iphone' CHECK (device_type IN ('iphone', 'ipad', 'watch')),
+    platform VARCHAR(20) DEFAULT 'ios' CHECK (platform IN ('ios', 'android')),
+    device_name VARCHAR(100),
     is_primary BOOLEAN DEFAULT true,
     critical_alerts_enabled BOOLEAN DEFAULT true,
     last_active_at TIMESTAMPTZ DEFAULT NOW(),
@@ -38,6 +39,7 @@ CREATE TABLE public.user_devices (
 -- Index for device token lookups
 CREATE INDEX idx_user_devices_token ON public.user_devices(device_token);
 CREATE INDEX idx_user_devices_user ON public.user_devices(user_id);
+CREATE INDEX idx_user_devices_platform ON public.user_devices(platform);
 
 -- ============================================
 -- WAKE PERMISSIONS TABLE

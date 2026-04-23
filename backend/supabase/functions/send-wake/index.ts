@@ -21,9 +21,14 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const apnsKeyId = Deno.env.get("APNS_KEY_ID")!;
-    const apnsTeamId = Deno.env.get("APNS_TEAM_ID")!;
-    const apnsPrivateKey = Deno.env.get("APNS_PRIVATE_KEY")!.replace(/\\n/g, "\n");
+
+    // iOS APNs credentials
+    const apnsKeyId = Deno.env.get("APNS_KEY_ID");
+    const apnsTeamId = Deno.env.get("APNS_TEAM_ID");
+    const apnsPrivateKey = Deno.env.get("APNS_PRIVATE_KEY")?.replace(/\\n/g, "\n");
+
+    // Android FCM credentials
+    const fcmServerKey = Deno.env.get("FCM_SERVER_KEY");
 
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -108,20 +113,21 @@ serve(async (req) => {
       });
     }
 
-    // Get receiver's primary device
-    const { data: device, error: deviceError } = await supabase
+    // Get receiver's devices (all devices, not just primary)
+    const { data: devices, error: deviceError } = await supabase
       .from("user_devices")
       .select("*")
-      .eq("user_id", targetUserId)
-      .eq("is_primary", true)
-      .single();
+      .eq("user_id", targetUserId);
 
-    if (deviceError || !device) {
+    if (deviceError || !devices || devices.length === 0) {
       return new Response(JSON.stringify({ error: "Receiver has no registered devices" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Get sender's display name
+    const senderName = user.user.user_metadata?.display_name || user.user.email?.split('@')[0] || "Someone";
 
     // Create wake request
     const { data: wakeRequest, error: wakeError } = await supabase
@@ -143,13 +149,31 @@ serve(async (req) => {
       });
     }
 
-    // Send push notification via APNs
-    await sendPushNotification(device.device_token, {
-      requestId: wakeRequest.id,
-      senderName: user.user.user_metadata?.display_name || "Someone",
-      message: message,
-      urgency: urgency,
+    // Send push notifications to all devices
+    const pushPromises = devices.map(device => {
+      if (device.platform === 'ios' && apnsKeyId && apnsTeamId && apnsPrivateKey) {
+        return sendAPNsNotification(device.device_token, {
+          requestId: wakeRequest.id,
+          senderId: senderId,
+          senderName: senderName,
+          message: message,
+          urgency: urgency,
+        });
+      } else if (device.platform === 'android' && fcmServerKey) {
+        return sendFCMNotification(device.device_token, {
+          requestId: wakeRequest.id,
+          senderId: senderId,
+          senderName: senderName,
+          message: message,
+          urgency: urgency,
+        });
+      } else {
+        console.log(`Skipping device ${device.id}: missing credentials for ${device.platform}`);
+        return Promise.resolve();
+      }
     });
+
+    await Promise.all(pushPromises);
 
     // Update wake request status to delivered
     await supabase
@@ -165,6 +189,7 @@ serve(async (req) => {
         success: true,
         requestId: wakeRequest.id,
         status: "delivered",
+        devicesNotified: devices.length,
       }),
       {
         status: 200,
@@ -194,10 +219,149 @@ function isCooldownComplete(lastRequest: string): boolean {
   return diffMinutes >= 30;
 }
 
-async function sendPushNotification(deviceToken: string, payload: any) {
-  // APNs implementation would go here
-  // This requires proper JWT authentication with Apple
-  console.log("Sending push to:", deviceToken, payload);
+// iOS APNs notification
+async function sendAPNsNotification(deviceToken: string, payload: any) {
+  try {
+    const apnsKeyId = Deno.env.get("APNS_KEY_ID")!;
+    const apnsTeamId = Deno.env.get("APNS_TEAM_ID")!;
+    const apnsPrivateKey = Deno.env.get("APNS_PRIVATE_KEY")!.replace(/\\n/g, "\n");
+
+    // Generate JWT for APNs authentication
+    const jwt = await generateAPNsJWT(apnsKeyId, apnsTeamId, apnsPrivateKey);
+
+    // Build APNs payload
+    const apnsPayload = {
+      aps: {
+        "alert": {
+          "title": "Wake Up! 🌅",
+          "body": `${payload.senderName} is trying to wake you`,
+          "launch-image": "alarm",
+        },
+        "sound": "criticalalarm.caf",
+        "badge": 1,
+        "interruption-level": "critical",
+        "content-available": 1,
+      },
+      "requestId": payload.requestId,
+      "senderId": payload.senderId,
+      "senderName": payload.senderName,
+      "message": payload.message || "",
+      "urgency": payload.urgency,
+    };
+
+    // Send to APNs
+    const response = await fetch(`https://api.push.apple.com/3/device/${deviceToken}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${jwt}`,
+        "apns-topic": "com.wakeupsunshine.app",
+        "apns-priority": "10",
+        "apns-push-type": "alert",
+      },
+      body: JSON.stringify(apnsPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`APNs error: ${response.status} - ${errorText}`);
+    }
+
+    return response.ok;
+  } catch (error) {
+    console.error("APNs notification failed:", error);
+    return false;
+  }
+}
+
+// Generate APNs JWT
+async function generateAPNsJWT(keyId: string, teamId: string, privateKey: string): Promise<string> {
+  const header = { alg: "ES256", kid: keyId };
+  const payload = { iss: teamId, iat: Math.floor(Date.now() / 1000) };
+
+  const encoder = new TextEncoder();
+  const headerBase64 = btoa(JSON.stringify(header)).replace(/=/g, "");
+  const payloadBase64 = btoa(JSON.stringify(payload)).replace(/=/g, "");
+
+  const signingInput = `${headerBase64}.${payloadBase64}`;
+
+  // Import the private key
+  const keyData = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+  const cryptoKey = await crypto.subtle.importKey(
+    "pem",
+    new TextEncoder().encode(keyData),
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    cryptoKey,
+    encoder.encode(signingInput)
+  );
+
+  const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, "");
+  return `${signingInput}.${signatureBase64}`;
+}
+
+// Android FCM notification
+async function sendFCMNotification(deviceToken: string, payload: any) {
+  try {
+    const fcmServerKey = Deno.env.get("FCM_SERVER_KEY");
+    if (!fcmServerKey) {
+      console.log("FCM server key not configured");
+      return false;
+    }
+
+    const fcmPayload = {
+      to: deviceToken,
+      priority: "high",
+      data: {
+        requestId: payload.requestId,
+        senderId: payload.senderId,
+        senderName: payload.senderName,
+        message: payload.message || "",
+        urgency: payload.urgency,
+        type: "wake_alarm",
+      },
+      notification: {
+        title: "Wake Up! 🌅",
+        body: `${payload.senderName} is trying to wake you`,
+        sound: "default",
+        tag: "wake_alarm",
+        priority: "max",
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channel_id: "wake_alarm_channel",
+          sound: "default",
+          priority: "max",
+          default_vibrate_timings": true,
+        },
+      },
+    };
+
+    const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `key=${fcmServerKey}`,
+      },
+      body: JSON.stringify(fcmPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`FCM error: ${response.status} - ${errorText}`);
+    }
+
+    return response.ok;
+  } catch (error) {
+    console.error("FCM notification failed:", error);
+    return false;
+  }
 }
 
 async function updateRateLimit(supabase: any, senderId: string, targetId: string) {

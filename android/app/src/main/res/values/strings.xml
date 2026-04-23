@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wake Up Sunshine</string>
+    <string name="wake_alarm_channel_name">Wake Alarms</string>
+    <string name="wake_alarm_channel_description">Critical wake-up alarms that override Do Not Disturb</string>
+    <string name="notification_channel_name">Notifications</string>
+    <string name="notification_channel_description">General app notifications</string>
+</resources>

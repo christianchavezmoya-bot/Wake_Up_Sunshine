@@ -43,3 +43,12 @@ targets:
       properties:
         aps-environment: development
         com.apple.developer.usernotifications.critical-alerts: true
+    dependencies:
+      - package: Supabase
+        url: https://github.com/supabase/supabase-swift
+        from: "2.0.0"
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
