@@ -6,6 +6,7 @@ struct OnboardingFlowView: View {
 
     enum OnboardingStep: Int, CaseIterable {
         case welcome
+        case emailAuth
         case phoneInput
         case otpVerification
         case permissions // Consolidated: notifications + critical alerts
@@ -13,10 +14,11 @@ struct OnboardingFlowView: View {
 
         var progress: Double {
             switch self {
-            case .welcome: return 0.2
-            case .phoneInput: return 0.4
-            case .otpVerification: return 0.6
-            case .permissions: return 0.8
+            case .welcome: return 0.15
+            case .emailAuth: return 0.3
+            case .phoneInput: return 0.5
+            case .otpVerification: return 0.7
+            case .permissions: return 0.85
             case .ready: return 1.0
             }
         }
@@ -24,6 +26,7 @@ struct OnboardingFlowView: View {
         var title: String {
             switch self {
             case .welcome: return ""
+            case .emailAuth: return "Back"
             case .phoneInput: return "Back"
             case .otpVerification: return "Back"
             case .permissions: return "Back"
@@ -61,11 +64,23 @@ struct OnboardingFlowView: View {
                 // Content with spring animation
                 switch currentStep {
                 case .welcome:
-                    WelcomeStepView(onContinue: { currentStep = .phoneInput })
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
+                    WelcomeStepView(
+                        onEmailContinue: { currentStep = .emailAuth },
+                        onPhoneContinue: { currentStep = .phoneInput }
+                    )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
                         ))
+                case .emailAuth:
+                    EmailAuthView(
+                        onSuccess: { currentStep = .permissions },
+                        onBack: { currentStep = .welcome }
+                    )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
                 case .phoneInput:
                     PhoneInputStepView(onContinue: { currentStep = .otpVerification })
                         .transition(.asymmetric(
@@ -95,12 +110,14 @@ struct OnboardingFlowView: View {
 
     private func goBack() {
         switch currentStep {
+        case .emailAuth:
+            currentStep = .welcome
         case .phoneInput:
             currentStep = .welcome
         case .otpVerification:
             currentStep = .phoneInput
         case .permissions:
-            currentStep = .otpVerification
+            currentStep = .emailAuth
         default:
             break
         }
@@ -109,7 +126,8 @@ struct OnboardingFlowView: View {
 
 // MARK: - Welcome Step
 struct WelcomeStepView: View {
-    let onContinue: () -> Void
+    let onEmailContinue: () -> Void
+    let onPhoneContinue: () -> Void
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
@@ -149,9 +167,28 @@ struct WelcomeStepView: View {
 
             Spacer()
 
-            Button(action: onContinue) {
-                Text("Get Started")
-                    .primaryButtonStyle()
+            // Email button (Primary)
+            Button(action: onEmailContinue) {
+                HStack {
+                    Image(systemName: "envelope.fill")
+                    Text("Continue with Email")
+                }
+                .primaryButtonStyle()
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+
+            // Phone button (Secondary)
+            Button(action: onPhoneContinue) {
+                HStack {
+                    Image(systemName: "phone.fill")
+                    Text("Continue with Phone")
+                }
+                .font(.headline)
+                .foregroundColor(DesignSystem.Colors.primaryOrange)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignSystem.Spacing.md)
+                .background(Color.appSurface)
+                .cornerRadius(DesignSystem.Spacing.buttonRadius)
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.bottom, DesignSystem.Spacing.lg)

@@ -1,16 +1,13 @@
-# REMINDER: This is a placeholder file
-# Replace with your actual google-services.json from Firebase Console
-# Download it from: Firebase Console > Project Settings > Your apps > google-services.json
 {
   "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "project_id": "wake-up-sunshine",
-    "storage_bucket": "wake-up-sunshine.appspot.com"
+    "project_number": "646618781839",
+    "project_id": "wakeupsunshine-245c6",
+    "storage_bucket": "wakeupsunshine-245c6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:YOUR_APP_ID:android:YOUR_HASH",
+        "mobilesdk_app_id": "1:646618781839:android:515fe65eeb3fb4d495b8fa",
         "android_client_info": {
           "package_name": "com.wakeupsunshine.app"
         }
@@ -18,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_API_KEY"
+          "current_key": "AIzaSyBN1aNdFh7v3BSXH-HHUZ2oBfcqRiTs7So"
         }
       ],
       "services": {

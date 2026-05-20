@@ -1,0 +1,656 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		070049BD9354E4AE4369E718 /* AlarmSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6997B2DAE75744A9937A44D5 /* AlarmSound.swift */; };
+		AA1111111111111111111111 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1111111111111111111111 /* PaywallView.swift */; };
+		AA2222222222222222222222 /* InviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222222222222222222 /* InviteView.swift */; };
+		AA3333333333333333333333 /* RedemptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3333333333333333333333 /* RedemptionView.swift */; };
+		AA4444444444444444444444 /* UnlockManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444444444444444444444 /* UnlockManager.swift */; };
+		0BCB6C0DE8D1B6F8546AA4DC /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF8CFB266F37FF88C74C94A /* LoginView.swift */; };
+		0D4650671FE747F2808F57B2 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B45D44AB2C6B9D8517DF3D3C /* Supabase */; };
+		1744D9F456ACD3F13934370A /* ringing_tone.caf in Resources */ = {isa = PBXBuildFile; fileRef = D3984A445D2F6796C0DA9F40 /* ringing_tone.caf */; };
+		1F4C81446D99EE6AAA71445B /* AlarmSoundPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0BE2B59E5A9B93B502C809 /* AlarmSoundPicker.swift */; };
+		2D865D593A664F5F9D5E1E67 /* LegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48742367EE5E45918B3E113F /* LegalLinks.swift */; };
+		2961563550F50F38358287B0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A81772C4F50EC2477BCD4F3 /* Assets.xcassets */; };
+		38251249337BCA4755A5B3AF /* ContactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF34728D1AFBF840D9DA2881 /* ContactsView.swift */; };
+		39B5988437AD6438A98BD1CD /* minions.caf in Resources */ = {isa = PBXBuildFile; fileRef = BACF0809BA0384ECE4A91B6F /* minions.caf */; };
+		3A2F8CB9031F7FB1311D274B /* EmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66994CE2EEF33FDD86CEEDB /* EmailAuthView.swift */; };
+		3B476C255F0C2697AE689350 /* WakeAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BA136105E4BE89ABB7CF5F /* WakeAlertView.swift */; };
+		43BCF22DD0489CC6FE85F6E1 /* AmbientAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FB5B5C856B3356B58F33C5 /* AmbientAudioManager.swift */; };
+		44E639BF49495D4B8F77D92E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1981273AA557B03AB8DE13 /* MainTabView.swift */; };
+		54E3C8532ADDD8A9D290EC08 /* BiometricManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0755FE668E2B75ECB102B65 /* BiometricManager.swift */; };
+		5927547EFB8DB7A1C6EAEA99 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF26D4AA44A7FD15E65453F /* SettingsView.swift */; };
+		5E67B0778B9E9D7D0706C06E /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07840C13BA6B2EA6DFF7154B /* DebugLogger.swift */; };
+		65AE8EA61EFEA28124CEBAF4 /* WakeRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571303E6B0A590B559DF13F8 /* WakeRequest.swift */; };
+		6EA93A39E8D95FB1B17343F6 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7A4A9EB6F7E41FF5BA11EC /* AuthManager.swift */; };
+		7003F3F948A6729406AA5EFE /* DeepLinkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5952124A198ED36E8C25D1A1 /* DeepLinkManager.swift */; };
+		729A2072D8B619F46E9F7F5C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FDC9BA23517197E7E83C4F /* AppDelegate.swift */; };
+		7EE83B0988F5D4060685A5ED /* NicknameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA1FC75FA4A06122FC3E8552 /* NicknameStore.swift */; };
+		8F3498170A7CF6341109F6A9 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D6FF9844C6FE8AF796401D /* SupabaseManager.swift */; };
+		985D0601DCF13C82B4341709 /* hey_you.caf in Resources */ = {isa = PBXBuildFile; fileRef = 82D147D99E5D8D82F38340EE /* hey_you.caf */; };
+		9B57379600E8FE00EC715782 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F888B3AFBA72C0C4FD948CC /* RootView.swift */; };
+		9E207C7E17FC7BC116C1F3A6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B258D9D57399FD5575E73C7 /* HomeView.swift */; };
+		A0DD908D3C39B52788BE3B58 /* ringing_tone.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AD16D4A522CF92140A3F4995 /* ringing_tone.mp3 */; };
+		B1D6524DA5429A4CEF019FF4 /* InviteContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54427EB3642D219783EA3F7E /* InviteContactView.swift */; };
+		B9B400B8103C40E0473C4061 /* wake_up.caf in Resources */ = {isa = PBXBuildFile; fileRef = 04F1CA02EC352A76685D130E /* wake_up.caf */; };
+		C2D921D0B046E2F6A54BD995 /* WakeUpSunshineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07513E83CD87047DEBADD72E /* WakeUpSunshineApp.swift */; };
+		CBCFDD9773039A8A2ABCB86F /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2096463AB08B8DDE0FD1A /* Extensions.swift */; };
+		D10D653A905432F1E40BC370 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC046EBF23C6CE611746DE7F /* DiagnosticsView.swift */; };
+		DCAE11115EF7727AB331C5A3 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1902B1777AC09EC58FC8D5B /* HistoryView.swift */; };
+		E0BE403846566DF8826B44C4 /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE241C70B234D6E6E1207C30 /* OnboardingFlowView.swift */; };
+		E2C74160754740FF1274248A /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 63F067268657AEDD514039B1 /* README.md */; };
+		E725E8F9CDB33CF07BA4710C /* WakeAlertManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D09ABC9616F88D7B990FBF19 /* WakeAlertManager.swift */; };
+		E9FBED77F6BEFCE0CD61A956 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC7E32644786E850533B9CBE /* PushNotificationManager.swift */; };
+		EBA180DE0EBAAB2434AE09C9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE9DBB5D5A9E35C4619E4B1 /* AppTheme.swift */; };
+		F7B7596DA28233C53C5619B1 /* InviteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2430351F2D84E145E0F11BEB /* InviteService.swift */; };
+		FBE0A16A514B8DE6CCAF553F /* ambient.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1DF89E8EAECD7349425DE249 /* ambient.mp3 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0436DEC695CE1247A1B8E813 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BB1111111111111111111111 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		BB2222222222222222222222 /* InviteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteView.swift; sourceTree = "<group>"; };
+		BB3333333333333333333333 /* RedemptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedemptionView.swift; sourceTree = "<group>"; };
+		BB4444444444444444444444 /* UnlockManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockManager.swift; sourceTree = "<group>"; };
+		04BA136105E4BE89ABB7CF5F /* WakeAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeAlertView.swift; sourceTree = "<group>"; };
+		04F1CA02EC352A76685D130E /* wake_up.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = wake_up.caf; sourceTree = "<group>"; };
+		07513E83CD87047DEBADD72E /* WakeUpSunshineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeUpSunshineApp.swift; sourceTree = "<group>"; };
+		07840C13BA6B2EA6DFF7154B /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogger.swift; sourceTree = "<group>"; };
+		1A81772C4F50EC2477BCD4F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1DF89E8EAECD7349425DE249 /* ambient.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ambient.mp3; sourceTree = "<group>"; };
+		1EB1CED4C14A6A377E23DEEF /* WakeUpSunshine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WakeUpSunshine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2430351F2D84E145E0F11BEB /* InviteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteService.swift; sourceTree = "<group>"; };
+		3B258D9D57399FD5575E73C7 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		48742367EE5E45918B3E113F /* LegalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalLinks.swift; sourceTree = "<group>"; };
+		52C2096463AB08B8DDE0FD1A /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		54427EB3642D219783EA3F7E /* InviteContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactView.swift; sourceTree = "<group>"; };
+		571303E6B0A590B559DF13F8 /* WakeRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeRequest.swift; sourceTree = "<group>"; };
+		5952124A198ED36E8C25D1A1 /* DeepLinkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkManager.swift; sourceTree = "<group>"; };
+		63F067268657AEDD514039B1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		6997B2DAE75744A9937A44D5 /* AlarmSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSound.swift; sourceTree = "<group>"; };
+		72D6FF9844C6FE8AF796401D /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		81FB5B5C856B3356B58F33C5 /* AmbientAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientAudioManager.swift; sourceTree = "<group>"; };
+		82D147D99E5D8D82F38340EE /* hey_you.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hey_you.caf; sourceTree = "<group>"; };
+		8B0BE2B59E5A9B93B502C809 /* AlarmSoundPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSoundPicker.swift; sourceTree = "<group>"; };
+		8F1981273AA557B03AB8DE13 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		8F888B3AFBA72C0C4FD948CC /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		9AE9DBB5D5A9E35C4619E4B1 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		AD16D4A522CF92140A3F4995 /* ringing_tone.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ringing_tone.mp3; sourceTree = "<group>"; };
+		B0755FE668E2B75ECB102B65 /* BiometricManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricManager.swift; sourceTree = "<group>"; };
+		BA1FC75FA4A06122FC3E8552 /* NicknameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NicknameStore.swift; sourceTree = "<group>"; };
+		BACF0809BA0384ECE4A91B6F /* minions.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = minions.caf; sourceTree = "<group>"; };
+		BF7A4A9EB6F7E41FF5BA11EC /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		C5FDC9BA23517197E7E83C4F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		CE241C70B234D6E6E1207C30 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
+		CF34728D1AFBF840D9DA2881 /* ContactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsView.swift; sourceTree = "<group>"; };
+		D09ABC9616F88D7B990FBF19 /* WakeAlertManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeAlertManager.swift; sourceTree = "<group>"; };
+		D1902B1777AC09EC58FC8D5B /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		D3984A445D2F6796C0DA9F40 /* ringing_tone.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ringing_tone.caf; sourceTree = "<group>"; };
+		D66994CE2EEF33FDD86CEEDB /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
+		DBF26D4AA44A7FD15E65453F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DBF8CFB266F37FF88C74C94A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		EAF917BD7275F3190A1B563C /* WakeUpSunshine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WakeUpSunshine.entitlements; sourceTree = "<group>"; };
+		EC7E32644786E850533B9CBE /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
+		FC046EBF23C6CE611746DE7F /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E8DDC598485438AAA7F20A41 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0D4650671FE747F2808F57B2 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		411BFFEE42D4AF29DDED8A0C /* WakeAlert */ = {
+			isa = PBXGroup;
+			children = (
+				04BA136105E4BE89ABB7CF5F /* WakeAlertView.swift */,
+			);
+			path = WakeAlert;
+			sourceTree = "<group>";
+		};
+		44B9D81C737F4EC9FD0FD5FC /* WakeUpSunshine */ = {
+			isa = PBXGroup;
+			children = (
+				D5C58ABF23BE295A1C126479 /* App */,
+				7B817DD69269742C085144F2 /* Features */,
+				7F42CE67523AE0EACFF41BE5 /* Models */,
+				A51AE0F25A329E351FED5D1A /* Resources */,
+				63C6C0AFD4E1A5BF5C6F7EFA /* Services */,
+				68F35A3A161CB1E0FE815FD5 /* Shared */,
+			);
+			path = WakeUpSunshine;
+			sourceTree = "<group>";
+		};
+			63C6C0AFD4E1A5BF5C6F7EFA /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				81FB5B5C856B3356B58F33C5 /* AmbientAudioManager.swift */,
+				BF7A4A9EB6F7E41FF5BA11EC /* AuthManager.swift */,
+				B0755FE668E2B75ECB102B65 /* BiometricManager.swift */,
+				07840C13BA6B2EA6DFF7154B /* DebugLogger.swift */,
+				5952124A198ED36E8C25D1A1 /* DeepLinkManager.swift */,
+				2430351F2D84E145E0F11BEB /* InviteService.swift */,
+				BA1FC75FA4A06122FC3E8552 /* NicknameStore.swift */,
+				EC7E32644786E850533B9CBE /* PushNotificationManager.swift */,
+				72D6FF9844C6FE8AF796401D /* SupabaseManager.swift */,
+				BB4444444444444444444444 /* UnlockManager.swift */,
+				D09ABC9616F88D7B990FBF19 /* WakeAlertManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		68F35A3A161CB1E0FE815FD5 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AB8112160BBB406C1CCC9A2A /* Extensions */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+			7B817DD69269742C085144F2 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				97881648F6A997B25C75A029 /* Contacts */,
+				EC8023E1819D3670E6348A15 /* History */,
+				921A69C7E762319B8E63E23A /* Home */,
+				AF4218B94E7514A7CD175080 /* Onboarding */,
+				857B4ED06B65EB0E1C1970C3 /* Settings */,
+				AA87F994165F6FA58114C1EA /* Wake */,
+				411BFFEE42D4AF29DDED8A0C /* WakeAlert */,
+				DD1111111111111111111111 /* Unlock */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		DD1111111111111111111111 /* Unlock */ = {
+			isa = PBXGroup;
+			children = (
+				BB1111111111111111111111 /* PaywallView.swift */,
+				BB2222222222222222222222 /* InviteView.swift */,
+				BB3333333333333333333333 /* RedemptionView.swift */,
+			);
+			path = Unlock;
+			sourceTree = "<group>";
+		};
+		7F42CE67523AE0EACFF41BE5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6997B2DAE75744A9937A44D5 /* AlarmSound.swift */,
+				9AE9DBB5D5A9E35C4619E4B1 /* AppTheme.swift */,
+				571303E6B0A590B559DF13F8 /* WakeRequest.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		857B4ED06B65EB0E1C1970C3 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				FC046EBF23C6CE611746DE7F /* DiagnosticsView.swift */,
+				DBF26D4AA44A7FD15E65453F /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		921A69C7E762319B8E63E23A /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				3B258D9D57399FD5575E73C7 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		97881648F6A997B25C75A029 /* Contacts */ = {
+			isa = PBXGroup;
+			children = (
+				CF34728D1AFBF840D9DA2881 /* ContactsView.swift */,
+				54427EB3642D219783EA3F7E /* InviteContactView.swift */,
+			);
+			path = Contacts;
+			sourceTree = "<group>";
+		};
+		A51AE0F25A329E351FED5D1A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1A81772C4F50EC2477BCD4F3 /* Assets.xcassets */,
+				0436DEC695CE1247A1B8E813 /* Info.plist */,
+				EAF917BD7275F3190A1B563C /* WakeUpSunshine.entitlements */,
+				E35B4EFCC358848F5FAFB8BB /* Sounds */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		AA87F994165F6FA58114C1EA /* Wake */ = {
+			isa = PBXGroup;
+			children = (
+				8B0BE2B59E5A9B93B502C809 /* AlarmSoundPicker.swift */,
+			);
+			path = Wake;
+			sourceTree = "<group>";
+		};
+		AB8112160BBB406C1CCC9A2A /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				52C2096463AB08B8DDE0FD1A /* Extensions.swift */,
+				48742367EE5E45918B3E113F /* LegalLinks.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		AD92AA3DBA81724D14A76F9B = {
+			isa = PBXGroup;
+			children = (
+				44B9D81C737F4EC9FD0FD5FC /* WakeUpSunshine */,
+				E7DDBC568A90B0EFF54A6072 /* Products */,
+			);
+			indentWidth = 4;
+			sourceTree = "<group>";
+			tabWidth = 4;
+			usesTabs = 0;
+		};
+		AF4218B94E7514A7CD175080 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				D66994CE2EEF33FDD86CEEDB /* EmailAuthView.swift */,
+				DBF8CFB266F37FF88C74C94A /* LoginView.swift */,
+				CE241C70B234D6E6E1207C30 /* OnboardingFlowView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		D5C58ABF23BE295A1C126479 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C5FDC9BA23517197E7E83C4F /* AppDelegate.swift */,
+				8F1981273AA557B03AB8DE13 /* MainTabView.swift */,
+				8F888B3AFBA72C0C4FD948CC /* RootView.swift */,
+				07513E83CD87047DEBADD72E /* WakeUpSunshineApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E35B4EFCC358848F5FAFB8BB /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				1DF89E8EAECD7349425DE249 /* ambient.mp3 */,
+				82D147D99E5D8D82F38340EE /* hey_you.caf */,
+				BACF0809BA0384ECE4A91B6F /* minions.caf */,
+				63F067268657AEDD514039B1 /* README.md */,
+				D3984A445D2F6796C0DA9F40 /* ringing_tone.caf */,
+				AD16D4A522CF92140A3F4995 /* ringing_tone.mp3 */,
+				04F1CA02EC352A76685D130E /* wake_up.caf */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
+		E7DDBC568A90B0EFF54A6072 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1EB1CED4C14A6A377E23DEEF /* WakeUpSunshine.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EC8023E1819D3670E6348A15 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				D1902B1777AC09EC58FC8D5B /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		334B37AD0856F777AC504F10 /* WakeUpSunshine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AAEF0543C297D72720CD3DD1 /* Build configuration list for PBXNativeTarget "WakeUpSunshine" */;
+			buildPhases = (
+				8CCFD843F3A94A7A4E19F0B5 /* Sources */,
+				6225FFB5FA79045B6E485F21 /* Resources */,
+				E8DDC598485438AAA7F20A41 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WakeUpSunshine;
+			packageProductDependencies = (
+				B45D44AB2C6B9D8517DF3D3C /* Supabase */,
+			);
+			productName = WakeUpSunshine;
+			productReference = 1EB1CED4C14A6A377E23DEEF /* WakeUpSunshine.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B4FB5161C3BADC892C8670C3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					334B37AD0856F777AC504F10 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0EB9DC8FB12B0705AB77F044 /* Build configuration list for PBXProject "WakeUpSunshine" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AD92AA3DBA81724D14A76F9B;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C161DAD12D6DCA8C02DEAE4A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				334B37AD0856F777AC504F10 /* WakeUpSunshine */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6225FFB5FA79045B6E485F21 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2961563550F50F38358287B0 /* Assets.xcassets in Resources */,
+				E2C74160754740FF1274248A /* README.md in Resources */,
+				FBE0A16A514B8DE6CCAF553F /* ambient.mp3 in Resources */,
+				985D0601DCF13C82B4341709 /* hey_you.caf in Resources */,
+				39B5988437AD6438A98BD1CD /* minions.caf in Resources */,
+				1744D9F456ACD3F13934370A /* ringing_tone.caf in Resources */,
+				A0DD908D3C39B52788BE3B58 /* ringing_tone.mp3 in Resources */,
+				B9B400B8103C40E0473C4061 /* wake_up.caf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8CCFD843F3A94A7A4E19F0B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				070049BD9354E4AE4369E718 /* AlarmSound.swift in Sources */,
+				AA1111111111111111111111 /* PaywallView.swift in Sources */,
+				AA2222222222222222222222 /* InviteView.swift in Sources */,
+				AA3333333333333333333333 /* RedemptionView.swift in Sources */,
+				AA4444444444444444444444 /* UnlockManager.swift in Sources */,
+				1F4C81446D99EE6AAA71445B /* AlarmSoundPicker.swift in Sources */,
+				2D865D593A664F5F9D5E1E67 /* LegalLinks.swift in Sources */,
+				43BCF22DD0489CC6FE85F6E1 /* AmbientAudioManager.swift in Sources */,
+				729A2072D8B619F46E9F7F5C /* AppDelegate.swift in Sources */,
+				EBA180DE0EBAAB2434AE09C9 /* AppTheme.swift in Sources */,
+				6EA93A39E8D95FB1B17343F6 /* AuthManager.swift in Sources */,
+				54E3C8532ADDD8A9D290EC08 /* BiometricManager.swift in Sources */,
+				38251249337BCA4755A5B3AF /* ContactsView.swift in Sources */,
+				5E67B0778B9E9D7D0706C06E /* DebugLogger.swift in Sources */,
+				7003F3F948A6729406AA5EFE /* DeepLinkManager.swift in Sources */,
+				D10D653A905432F1E40BC370 /* DiagnosticsView.swift in Sources */,
+				3A2F8CB9031F7FB1311D274B /* EmailAuthView.swift in Sources */,
+				CBCFDD9773039A8A2ABCB86F /* Extensions.swift in Sources */,
+				DCAE11115EF7727AB331C5A3 /* HistoryView.swift in Sources */,
+				9E207C7E17FC7BC116C1F3A6 /* HomeView.swift in Sources */,
+				B1D6524DA5429A4CEF019FF4 /* InviteContactView.swift in Sources */,
+				F7B7596DA28233C53C5619B1 /* InviteService.swift in Sources */,
+				0BCB6C0DE8D1B6F8546AA4DC /* LoginView.swift in Sources */,
+				44E639BF49495D4B8F77D92E /* MainTabView.swift in Sources */,
+				7EE83B0988F5D4060685A5ED /* NicknameStore.swift in Sources */,
+				E0BE403846566DF8826B44C4 /* OnboardingFlowView.swift in Sources */,
+				E9FBED77F6BEFCE0CD61A956 /* PushNotificationManager.swift in Sources */,
+				9B57379600E8FE00EC715782 /* RootView.swift in Sources */,
+				5927547EFB8DB7A1C6EAEA99 /* SettingsView.swift in Sources */,
+				8F3498170A7CF6341109F6A9 /* SupabaseManager.swift in Sources */,
+				E725E8F9CDB33CF07BA4710C /* WakeAlertManager.swift in Sources */,
+				3B476C255F0C2697AE689350 /* WakeAlertView.swift in Sources */,
+				65AE8EA61EFEA28124CEBAF4 /* WakeRequest.swift in Sources */,
+				C2D921D0B046E2F6A54BD995 /* WakeUpSunshineApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6357B3CE6997E40D66912AFB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WakeUpSunshine/Resources/WakeUpSunshine.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = XMGK365XDY;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WakeUpSunshine/Resources/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.wakeupsunshine.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6FBE5C5217F1688EC21C1763 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wake Up Sunshine";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		8AAAB44922DE3A7F3E0D0DF4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Wake Up Sunshine";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		C30A1CDDEE462584322D9FB6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WakeUpSunshine/Resources/WakeUpSunshine.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = XMGK365XDY;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WakeUpSunshine/Resources/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.wakeupsunshine.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0EB9DC8FB12B0705AB77F044 /* Build configuration list for PBXProject "WakeUpSunshine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8AAAB44922DE3A7F3E0D0DF4 /* Debug */,
+				6FBE5C5217F1688EC21C1763 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AAEF0543C297D72720CD3DD1 /* Build configuration list for PBXNativeTarget "WakeUpSunshine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C30A1CDDEE462584322D9FB6 /* Debug */,
+				6357B3CE6997E40D66912AFB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C161DAD12D6DCA8C02DEAE4A /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B45D44AB2C6B9D8517DF3D3C /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C161DAD12D6DCA8C02DEAE4A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B4FB5161C3BADC892C8670C3 /* Project object */;
+}

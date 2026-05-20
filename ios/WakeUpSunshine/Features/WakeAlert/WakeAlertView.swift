@@ -1,15 +1,29 @@
 import SwiftUI
 import AVFoundation
+import AudioToolbox
 import UserNotifications
 
 struct WakeAlertView: View {
     let wakeRequest: WakeRequest
+    let alarmSoundId: String?
+
+    init(wakeRequest: WakeRequest, alarmSoundId: String? = nil) {
+        self.wakeRequest = wakeRequest
+        self.alarmSoundId = alarmSoundId
+    }
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isConfirming = false
     @State private var isSnoozing = false
-    @State private var audioPlayer: AVAudioPlayer?
+    
+    /// Reference to the ambient audio manager for alarm playback
+    private let ambientAudioManager = AmbientAudioManager.shared
+    
+    /// Get the alarm sound to play
+    private var alarmSound: AlarmSound {
+        AlarmSound.from(id: alarmSoundId ?? wakeRequest.alarmSoundId)
+    }
 
     var body: some View {
         ZStack {
@@ -147,11 +161,10 @@ struct WakeAlertView: View {
     private func confirmAwake() {
         isConfirming = true
         stopAlarmSound()
-
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task {
+            await sendWakeResponse(action: "confirmed")
             isConfirming = false
             dismiss()
         }
@@ -160,23 +173,45 @@ struct WakeAlertView: View {
     private func snoozeAlarm() {
         isSnoozing = true
         stopAlarmSound()
-
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task {
+            await sendWakeResponse(action: "snoozed")
             isSnoozing = false
             dismiss()
         }
     }
 
+    private func sendWakeResponse(action: String) async {
+        let endpoint = action == "confirmed" ? "/wake/\(wakeRequest.id)/confirm" : "/wake/\(wakeRequest.id)/\(action)"
+        do {
+            struct WakeResponseResult: Decodable { let success: Bool }
+            let _: WakeResponseResult = try await APIClient.shared.request(
+                endpoint: endpoint,
+                method: "POST",
+                body: ["wakeRequestId": wakeRequest.id, "action": action]
+            )
+            NotificationCenter.default.post(name: .wakeResponseReceived, object: nil)
+        } catch {
+            print("[WakeAlertView] wake-response failed: \(error)")
+        }
+    }
+
     private func playAlarmSound() {
-        // Critical alert sound would play here
+        // Use AmbientAudioManager to play alarm at maximum volume
+        // This works even when the phone is locked due to background audio
+        ambientAudioManager.playAlarm(soundName: alarmSound.rawValue, fileExtension: "caf")
+    }
+    
+    private func playSystemAlarmSound() {
+        // Play system alarm sound as fallback - handled by AmbientAudioManager
+        AudioServicesPlaySystemSound(SystemSoundID(1005)) // Mail incoming sound
+        AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
     }
 
     private func stopAlarmSound() {
-        audioPlayer?.stop()
-        audioPlayer = nil
+        // Stop the alarm and resume ambient audio
+        ambientAudioManager.stopAlarm()
     }
 
     private func triggerHaptic() {
@@ -216,6 +251,9 @@ struct ShakeAnimation: ViewModifier {
 }
 
 #Preview {
-    WakeAlertView(wakeRequest: WakeRequest(senderId: "alex", receiverId: "me", message: "Don't forget - morning shift starts in 30 minutes!"))
-        .environmentObject(AppState())
+    WakeAlertView(
+        wakeRequest: WakeRequest(senderId: "alex", receiverId: "me", senderName: "Alex", message: "Don't forget - morning shift starts in 30 minutes!"),
+        alarmSoundId: "classic"
+    )
+    .environmentObject(AppState())
 }

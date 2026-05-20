@@ -41,8 +41,9 @@ targets:
     entitlements:
       path: WakeUpSunshine/Resources/WakeUpSunshine.entitlements
       properties:
-        aps-environment: development
-        com.apple.developer.usernotifications.critical-alerts: true
+        aps-environment: production
+        # Critical Alerts temporarily removed - awaiting Apple approval
+        # com.apple.developer.usernotifications.critical-alerts: true
     dependencies:
       - package: Supabase
         url: https://github.com/supabase/supabase-swift

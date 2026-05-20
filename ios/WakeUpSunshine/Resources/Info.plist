@@ -56,5 +56,23 @@
     </dict>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>wakeupsunshine</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.wakeupsunshine.app</string>
+        </dict>
+    </array>
+    <!-- Privacy descriptions required for App Store -->
+    <key>NSCameraUsageDescription</key>
+    <string>Camera access is needed to scan QR codes for inviting friends.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Photo library access is needed to save QR code invites.</string>
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>Notifications are needed to receive wake-up calls from friends.</string>
 </dict>
 </plist>

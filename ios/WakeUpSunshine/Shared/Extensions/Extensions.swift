@@ -1,4 +1,5 @@
 import SwiftUI
+import Network
 
 // MARK: - Design System
 struct DesignSystem {
@@ -77,6 +78,20 @@ struct DesignSystem {
         static let cardShadow = (color: Color.black.opacity(0.08), radius: CGFloat(12), x: CGFloat(0), y: CGFloat(4))
         static let buttonShadow = (color: Color.black.opacity(0.15), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4))
     }
+}
+
+func isOffline() -> Bool {
+    let monitor = NWPathMonitor()
+    let semaphore = DispatchSemaphore(value: 0)
+    var isConnected = false
+    monitor.pathUpdateHandler = { path in
+        isConnected = (path.status == .satisfied)
+        semaphore.signal()
+    }
+    monitor.start(queue: DispatchQueue.global())
+    _ = semaphore.wait(timeout: .now() + 1)
+    monitor.cancel()
+    return !isConnected
 }
 
 // MARK: - Adaptive Colors (Light/Dark Mode Support)
@@ -266,7 +281,7 @@ extension View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: DesignSystem.TouchTargets.standard)
-            .background(Color.primaryOrange)
+            .background(DesignSystem.Colors.primaryOrange)
             .cornerRadius(DesignSystem.Spacing.buttonRadius)
             .shadow(
                 color: DesignSystem.Shadows.buttonShadow.color,
