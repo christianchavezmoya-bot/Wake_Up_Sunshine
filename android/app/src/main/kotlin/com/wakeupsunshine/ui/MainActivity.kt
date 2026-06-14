@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
     // Survives recomposition; updated by onNewIntent when app is already running
     private var pendingInviteToken by mutableStateOf<String?>(null)
+    private var pendingAuthCallback by mutableStateOf<Pair<String, String>?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
         fetchAndRegisterFcmToken()
         requestCriticalPermissions()
         pendingInviteToken = extractInviteToken(intent)
+        pendingAuthCallback = extractAuthCallback(intent)
 
         setContent {
             val savedTheme = ThemeManager.getSavedTheme(this)
@@ -70,6 +72,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val authViewModel: AuthViewModel = viewModel()
                     val authState by authViewModel.authState.collectAsState()
+
+                    // Consume auth callback tokens (email verification / password reset)
+                    LaunchedEffect(pendingAuthCallback) {
+                        pendingAuthCallback?.let { (accessToken, refreshToken) ->
+                            pendingAuthCallback = null
+                            authViewModel.handleAuthCallback(accessToken, refreshToken)
+                        }
+                    }
 
                     WakeUpSunshineNavigation(
                         authState = authState,
@@ -92,6 +102,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingInviteToken = extractInviteToken(intent)
+        pendingAuthCallback = extractAuthCallback(intent)
     }
 
     private fun extractInviteToken(intent: Intent?): String? {
@@ -105,6 +116,19 @@ class MainActivity : ComponentActivity() {
                 data.pathSegments.getOrNull(1)?.takeIf { it.isNotEmpty() }
             else -> null
         }
+    }
+
+    private fun extractAuthCallback(intent: Intent?): Pair<String, String>? {
+        val uri = intent?.data ?: return null
+        if (uri.scheme != "wakeupsunshine") return null
+        val fragment = uri.fragment ?: return null
+        val params = fragment.split("&").associate { part ->
+            val kv = part.split("=", limit = 2)
+            kv[0] to (kv.getOrElse(1) { "" })
+        }
+        val accessToken = params["access_token"]?.takeIf { it.isNotEmpty() } ?: return null
+        val refreshToken = params["refresh_token"]?.takeIf { it.isNotEmpty() } ?: return null
+        return Pair(accessToken, refreshToken)
     }
     
     private fun requestCriticalPermissions() {
@@ -197,8 +221,6 @@ class MainActivity : ComponentActivity() {
 sealed class Screen {
     object Welcome : Screen()
     object EmailAuth : Screen()
-    object PhoneAuth : Screen()
-    object OtpVerification : Screen()
     object Home : Screen()
     object Settings : Screen()
     object Diagnostics : Screen()
@@ -316,8 +338,6 @@ fun WakeUpSunshineNavigation(
     val context = LocalContext.current
     val activity = context as? FragmentActivity
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Welcome) }
-    var phoneNumber by remember { mutableStateOf("") }
-    var selectedCountry by remember { mutableStateOf(com.wakeupsunshine.ui.auth.Country.default) }
     var requiresBiometricUnlock by remember { mutableStateOf(false) }
 
     // Invite acceptance state
@@ -410,34 +430,13 @@ fun WakeUpSunshineNavigation(
     when (currentScreen) {
         Screen.Welcome -> {
             WelcomeScreen(
-                onEmailClick = { currentScreen = Screen.EmailAuth },
-                onPhoneClick = { currentScreen = Screen.PhoneAuth }
+                onEmailClick = { currentScreen = Screen.EmailAuth }
             )
         }
         Screen.EmailAuth -> {
             EmailAuthScreen(
                 onSuccess = { currentScreen = Screen.Home },
-                onBack = { currentScreen = Screen.Welcome },
-                onPhoneAuth = { currentScreen = Screen.PhoneAuth }
-            )
-        }
-        Screen.PhoneAuth -> {
-            LoginScreen(
-                onOTPRequested = { phone, country ->
-                    phoneNumber = phone
-                    selectedCountry = country
-                    currentScreen = Screen.OtpVerification
-                }
-            )
-        }
-        Screen.OtpVerification -> {
-            OTPVerificationScreen(
-                phoneNumber = phoneNumber,
-                country = selectedCountry,
-                onVerified = {
-                    // Auth state will trigger navigation to Home
-                },
-                onBack = { currentScreen = Screen.PhoneAuth }
+                onBack = { currentScreen = Screen.Welcome }
             )
         }
         Screen.Home -> {

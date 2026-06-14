@@ -37,7 +37,6 @@ private fun isOffline(context: Context): Boolean {
 fun EmailAuthScreen(
     onSuccess: () -> Unit,
     onBack: () -> Unit,
-    onPhoneAuth: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -54,11 +53,107 @@ fun EmailAuthScreen(
     var passwordResetSent by remember { mutableStateOf(false) }
     var isResendingVerification by remember { mutableStateOf(false) }
     var verificationResent by remember { mutableStateOf(false) }
+    var showConfirmPassword by remember { mutableStateOf(false) }
+    var signupPendingVerification by remember { mutableStateOf(false) }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val primaryOrange = Color(0xFFFF6B35)
     val backgroundColor = Color(0xFFFFF8F5)
     val surfaceColor = Color(0xFFFFFFFF)
+
+    // Verification pending screen
+    if (signupPendingVerification) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("📧", fontSize = 64.sp)
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "Check Your Email",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "We sent a confirmation link to",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = email,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Click the link in the email to verify your account, then come back here to sign in.",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                errorMessage?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(text = it, color = Color.Red, fontSize = 12.sp, textAlign = TextAlign.Center)
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+                Button(
+                    onClick = {
+                        if (email.isBlank() || !email.contains("@")) return@Button
+                        isResendingVerification = true
+                        viewModel.resendVerification(email.trim()) { success, err ->
+                            isResendingVerification = false
+                            if (success) verificationResent = true
+                            else errorMessage = "Failed to resend: ${err ?: "Unknown error"}"
+                        }
+                    },
+                    enabled = !isResendingVerification && !verificationResent,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryOrange),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    if (isResendingVerification) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text(
+                            text = if (verificationResent) "Email Sent!" else "Resend Verification Email",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = {
+                    signupPendingVerification = false
+                    isSignUp = false
+                    errorMessage = null
+                    verificationResent = false
+                    confirmPassword = ""
+                    displayName = ""
+                }) {
+                    Text("Back to Sign In", color = primaryOrange, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            TextButton(
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+            ) {
+                Text("Back", color = Color.Gray)
+            }
+        }
+        return
+    }
 
     Box(
         modifier = Modifier
@@ -192,9 +287,18 @@ fun EmailAuthScreen(
                         errorMessage = null
                     },
                     label = { Text("Confirm Password") },
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
+                    trailingIcon = {
+                        TextButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
+                            Text(
+                                text = if (showConfirmPassword) "Hide" else "Show",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = surfaceColor,
@@ -255,8 +359,8 @@ fun EmailAuthScreen(
                     )
                 }
 
-                // Resend verification button (shown after signup when email needs confirmation)
-                if (isSignUp && (error.contains("verification", ignoreCase = true) || error.contains("confirm", ignoreCase = true))) {
+                // Resend verification button (shown after signup or sign-in when email needs confirmation)
+                if (error.contains("verification", ignoreCase = true) || error.contains("confirm", ignoreCase = true) || error.contains("verify", ignoreCase = true)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     TextButton(
                         onClick = {
@@ -312,6 +416,9 @@ fun EmailAuthScreen(
                             isLoading = false
                             if (success) {
                                 onSuccess()
+                            } else if (err?.contains("check email", ignoreCase = true) == true ||
+                                       err?.contains("verification", ignoreCase = true) == true) {
+                                signupPendingVerification = true
                             } else {
                                 errorMessage = err ?: "Sign up failed"
                             }
@@ -394,22 +501,6 @@ fun EmailAuthScreen(
                     modifier = Modifier.weight(1f),
                     color = Color.Gray.copy(alpha = 0.3f)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Phone auth option
-            OutlinedButton(
-                onClick = onPhoneAuth,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = primaryOrange
-                )
-            ) {
-                Text("Continue with Phone", fontSize = 16.sp)
             }
 
             Spacer(modifier = Modifier.weight(1f))

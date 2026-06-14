@@ -618,42 +618,6 @@ fun SettingsScreen(
                 }
             }
 
-            if (AndroidBiometricManager.canAuthenticate(context)) {
-                SettingsSectionHeader("Security")
-
-                SettingsRow(
-                    icon = Icons.Default.Lock,
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    title = AndroidBiometricManager.biometricTypeName(context),
-                    subtitle = "Require biometric unlock to open the app",
-                    onClick = {}
-                )
-                SwitchRow(
-                    checked = biometricEnabled,
-                    onCheckedChange = { enabled ->
-                        val activity = context as? androidx.fragment.app.FragmentActivity
-                        if (enabled && activity != null) {
-                            scope.launch {
-                                val ok = AndroidBiometricManager.authenticate(
-                                    activity = activity,
-                                    title = "Enable ${AndroidBiometricManager.biometricTypeName(context)}",
-                                    subtitle = "Verify your identity to enable app unlock"
-                                )
-                                if (ok) {
-                                    AndroidBiometricManager.setEnabled(context, true)
-                                    biometricEnabled = true
-                                } else {
-                                    biometricEnabled = false
-                                }
-                            }
-                        } else {
-                            AndroidBiometricManager.setEnabled(context, false)
-                            biometricEnabled = false
-                        }
-                    }
-                )
-            }
-            
             // APPEARANCE SECTION
             SettingsSectionHeader("Appearance")
             
@@ -806,9 +770,11 @@ fun SettingsScreen(
                                 isDeletingAccount = true
                                 authViewModel.deleteAccount { success, err ->
                                     isDeletingAccount = false
-                                    showDeleteDialog = false
                                     if (success) {
+                                        showDeleteDialog = false
                                         onSignOut()
+                                    } else {
+                                        deleteError = err ?: "Failed to delete account. Please try again."
                                     }
                                 }
                             },

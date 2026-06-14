@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun WelcomeScreen(
-    onEmailClick: () -> Unit,
-    onPhoneClick: () -> Unit
+    onEmailClick: () -> Unit
 ) {
     val primaryOrange = Color(0xFFFF6B35)
     val primaryOrangeLight = Color(0xFFFF8F5C)
@@ -99,26 +98,6 @@ fun WelcomeScreen(
             ) {
                 Text(
                     text = "Continue with Email",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Secondary: Continue with Phone
-            OutlinedButton(
-                onClick = onPhoneClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = primaryOrange
-                )
-            ) {
-                Text(
-                    text = "Continue with Phone",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )

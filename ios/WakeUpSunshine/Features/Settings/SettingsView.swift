@@ -248,38 +248,6 @@ struct SettingsView: View {
                             .padding(.horizontal, DesignSystem.Spacing.lg)
                         }
 
-                        // MARK: Security
-                        if BiometricManager.shared.isBiometricAvailable {
-                            SettingsSection(title: "Security") {
-                                SettingsRow(
-                                    icon: BiometricManager.shared.biometricSystemImageName,
-                                    iconColor: DesignSystem.Colors.primaryOrange,
-                                    title: BiometricManager.shared.biometricTypeName,
-                                    subtitle: "Require \(BiometricManager.shared.biometricTypeName) to open the app"
-                                ) {
-                                    Toggle("", isOn: $biometricEnabled)
-                                        .labelsHidden()
-                                        .tint(DesignSystem.Colors.success)
-                                        .onChange(of: biometricEnabled) { _, enabled in
-                                            if enabled {
-                                                Task {
-                                                    let ok = await BiometricManager.shared.authenticate(
-                                                        reason: "Verify your identity to enable \(BiometricManager.shared.biometricTypeName)"
-                                                    )
-                                                    if ok {
-                                                        BiometricManager.shared.setEnabled(true)
-                                                    } else {
-                                                        biometricEnabled = false
-                                                    }
-                                                }
-                                            } else {
-                                                BiometricManager.shared.setEnabled(false)
-                                            }
-                                        }
-                                }
-                            }
-                        }
-
                         // MARK: Appearance
                         SettingsSection(title: "Appearance") {
                             Button {

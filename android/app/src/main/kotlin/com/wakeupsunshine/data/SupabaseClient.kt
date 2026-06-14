@@ -23,6 +23,7 @@ object SupabaseClient {
     const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplaG91YXRqY2ZjeGpqdW93emJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Mjk4MzEsImV4cCI6MjA5MjQwNTgzMX0.5nHtSx44b8U99WjaZUsRIIcUn4mHHdUMPFrM2Us3WjE"
 
     private val client = OkHttpClient()
+    val sharedHttpClient: OkHttpClient get() = client
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     // Current session
@@ -85,11 +86,17 @@ object SupabaseClient {
             val response = client.newCall(request).execute()
             if (response.isSuccessful) {
                 val json = JSONObject(response.body?.string() ?: "{}")
+                val accessToken = json.optString("access_token").takeIf { it.isNotBlank() }
+                    ?: return@withContext Result.failure(Exception("Refresh failed: missing access_token"))
+                val userJson = json.optJSONObject("user")
+                    ?: return@withContext Result.failure(Exception("Refresh failed: missing user object"))
+                val userId = userJson.optString("id").takeIf { it.isNotBlank() }
+                    ?: return@withContext Result.failure(Exception("Refresh failed: missing user id"))
                 val newSession = Session(
-                    accessToken = json.getString("access_token"),
-                    refreshToken = json.optString("refresh_token", s.refreshToken),
-                    userId = json.getJSONObject("user").getString("id"),
-                    email = json.getJSONObject("user").optString("email"),
+                    accessToken = accessToken,
+                    refreshToken = json.optString("refresh_token").takeIf { it.isNotBlank() } ?: s.refreshToken,
+                    userId = userId,
+                    email = userJson.optString("email").takeIf { it.isNotBlank() },
                     expiresAt = json.optLong("expires_at", 0L)
                 )
                 currentSession = newSession
@@ -142,6 +149,32 @@ object SupabaseClient {
         val ctx = appContext ?: return
         persistSession(ctx)
     }
+
+    fun setSessionFromAuthCallback(accessToken: String, refreshToken: String): Boolean {
+        return try {
+            val parts = accessToken.split(".")
+            if (parts.size < 2) return false
+            val padded = parts[1].let { it + "=".repeat((4 - it.length % 4) % 4) }
+            val payload = String(android.util.Base64.decode(padded, android.util.Base64.URL_SAFE))
+            val json = JSONObject(payload)
+            val userId = json.getString("sub")
+            val email = json.optString("email").takeIf { it.isNotEmpty() }
+            val expiresAt = json.optLong("exp", 0L)
+            currentSession = Session(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                userId = userId,
+                email = email,
+                expiresAt = expiresAt
+            )
+            persistCurrentSession()
+            DebugLogger.debug(TAG, "setSessionFromAuthCallback: session set for userId=$userId")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "setSessionFromAuthCallback: failed to parse tokens", e)
+            false
+        }
+    }
     
     suspend fun signUpWithEmail(email: String, password: String, displayName: String): Result<Session> = withContext(Dispatchers.IO) {
         try {
@@ -174,21 +207,23 @@ object SupabaseClient {
                 }
                 
                 val json = JSONObject(responseBody)
+
+                // Supabase returns session flat at top level when email confirmation is disabled,
+                // or nested under "session" key when confirmation is enabled but auto-confirmed.
                 val sessionJson = json.optJSONObject("session")
+                val accessToken = sessionJson?.optString("access_token")?.takeIf { it.isNotBlank() }
+                    ?: json.optString("access_token")
+                val refreshToken = sessionJson?.optString("refresh_token")?.takeIf { it.isNotBlank() }
+                    ?: json.optString("refresh_token")
+                val expiresAt = if (sessionJson != null) sessionJson.optLong("expires_at", 0L)
+                    else json.optLong("expires_at", 0L)
+                val userJson = json.optJSONObject("user")
+                val userId = userJson?.optString("id")?.takeIf { it.isNotBlank() }
+                    ?: json.optString("id")
+                val userEmail = userJson?.optString("email")?.takeIf { it.isNotBlank() }
+                    ?: json.optString("email")
 
-                if (sessionJson != null) {
-                    // Safely extract session data
-                    val accessToken = sessionJson.optString("access_token")
-                    val refreshToken = sessionJson.optString("refresh_token")
-                    val expiresAt = sessionJson.optLong("expires_at", 0L)
-                    val userId = json.optString("id")
-                    val userEmail = json.optString("email")
-
-                    if (accessToken.isBlank() || userId.isBlank()) {
-                        Log.e(TAG, "signUpWithEmail: Missing required session data")
-                        return@withContext Result.failure(Exception("Invalid session data received"))
-                    }
-
+                if (accessToken.isNotBlank() && userId.isNotBlank()) {
                     val session = Session(
                         accessToken = accessToken,
                         refreshToken = refreshToken,
@@ -201,7 +236,6 @@ object SupabaseClient {
                     DebugLogger.debug(TAG, "signUpWithEmail: Success for user $userId")
                     Result.success(session)
                 } else {
-                    // Email confirmation may be required
                     DebugLogger.debug(TAG, "signUpWithEmail: No session - email verification may be required")
                     Result.failure(Exception("Signup successful, please check email for verification"))
                 }
@@ -283,9 +317,18 @@ object SupabaseClient {
                 DebugLogger.debug(TAG, "signInWithEmail: Success for user $userId")
                 Result.success(session)
             } else {
-                val errorBody = response.body?.string() ?: "Unknown error"
+                val errorBody = response.body?.string() ?: ""
                 Log.e(TAG, "signInWithEmail: Failed with error: $errorBody")
-                Result.failure(Exception("Sign in failed: $errorBody"))
+                val userMessage = when {
+                    errorBody.contains("email_not_confirmed", ignoreCase = true) ||
+                    errorBody.contains("Email not confirmed", ignoreCase = true) ->
+                        "Please verify your email before signing in."
+                    response.code == 400 ->
+                        "Invalid login credentials"
+                    else ->
+                        "Sign in failed. Please try again."
+                }
+                Result.failure(Exception(userMessage))
             }
         } catch (e: Exception) {
             Log.e(TAG, "signInWithEmail: Exception", e)
@@ -339,12 +382,21 @@ object SupabaseClient {
             if (response.isSuccessful) {
                 val responseBody = response.body?.string()
                 val json = JSONObject(responseBody ?: "{}")
-                
+
+                val accessToken = json.optString("access_token").takeIf { it.isNotBlank() }
+                    ?: return@withContext Result.failure(Exception("OTP verification failed: missing access_token"))
+                val refreshToken = json.optString("refresh_token").takeIf { it.isNotBlank() }
+                    ?: return@withContext Result.failure(Exception("OTP verification failed: missing refresh_token"))
+                val userJson = json.optJSONObject("user")
+                    ?: return@withContext Result.failure(Exception("OTP verification failed: missing user"))
+                val userId = userJson.optString("id").takeIf { it.isNotBlank() }
+                    ?: return@withContext Result.failure(Exception("OTP verification failed: missing user id"))
+
                 val session = Session(
-                    accessToken = json.getString("access_token"),
-                    refreshToken = json.getString("refresh_token"),
-                    userId = json.getJSONObject("user").getString("id"),
-                    email = json.getJSONObject("user").optString("email"),
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    userId = userId,
+                    email = userJson.optString("email").takeIf { it.isNotBlank() },
                     expiresAt = json.optLong("expires_at", 0L)
                 )
                 currentSession = session
@@ -412,6 +464,7 @@ object SupabaseClient {
     
     suspend fun signOut() = withContext(Dispatchers.IO) {
         currentSession = null
+        appContext?.let { clearPersistedSession(it) }
     }
 
     /**
@@ -507,7 +560,6 @@ object SupabaseClient {
 
             if (response.isSuccessful) {
                 DebugLogger.debug(TAG, "deleteAccount: success for user $userId")
-                // Sign out and clear local session
                 val ctx = appContext
                 if (ctx != null) {
                     clearPersistedSession(ctx)
@@ -515,9 +567,13 @@ object SupabaseClient {
                 currentSession = null
                 Result.success(Unit)
             } else {
-                val errorBody = response.body?.string() ?: "Unknown error"
-                Log.e(TAG, "deleteAccount: failed $errorBody")
-                Result.failure(Exception("Delete failed: $errorBody"))
+                val errorBody = response.body?.string() ?: ""
+                Log.e(TAG, "deleteAccount: failed ${response.code} $errorBody")
+                val userMessage = if (response.code == 401)
+                    "Session expired. Please sign in again and retry."
+                else
+                    "Could not delete account. Please try again."
+                Result.failure(Exception(userMessage))
             }
         } catch (e: Exception) {
             Log.e(TAG, "deleteAccount failed", e)

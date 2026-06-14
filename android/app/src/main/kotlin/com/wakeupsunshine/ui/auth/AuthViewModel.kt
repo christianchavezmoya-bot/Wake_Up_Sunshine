@@ -164,6 +164,20 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
+     * Handle auth callback from email verification / password reset deep link.
+     * Parses tokens from the URL fragment and establishes a session.
+     */
+    fun handleAuthCallback(accessToken: String, refreshToken: String) {
+        val ok = SupabaseClient.setSessionFromAuthCallback(accessToken, refreshToken)
+        if (ok) {
+            viewModelScope.launch {
+                registerCurrentDeviceIfPossible()
+                _authState.value = AuthState.Authenticated
+            }
+        }
+    }
+
+    /**
      * Check if user is already authenticated
      */
     fun checkAuthState() {

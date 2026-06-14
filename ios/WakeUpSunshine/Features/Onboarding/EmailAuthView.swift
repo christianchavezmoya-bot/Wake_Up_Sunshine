@@ -14,14 +14,114 @@ struct EmailAuthView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showPassword = false
+    @State private var showConfirmPassword = false
     @State private var showForgotPassword = false
     @State private var forgotPasswordEmail = ""
     @State private var isResettingPassword = false
     @State private var passwordResetSent = false
     @State private var isResendingVerification = false
     @State private var verificationResent = false
+    @State private var signupPendingVerification = false
+    @State private var forgotPasswordError: String?
 
     var body: some View {
+        Group {
+            if signupPendingVerification {
+                verificationPendingView
+            } else {
+                formView
+            }
+        }
+    }
+
+    // MARK: - Verification Pending Screen
+    private var verificationPendingView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: DesignSystem.Spacing.lg) {
+                ZStack {
+                    Circle()
+                        .fill(DesignSystem.Colors.primaryOrange.opacity(0.12))
+                        .frame(width: 100, height: 100)
+                    Image(systemName: "envelope.badge.checkmark.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(DesignSystem.Colors.primaryOrange)
+                }
+
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Text("Check Your Email")
+                        .font(.title2.bold())
+                        .foregroundColor(.textPrimary)
+                    Text("We sent a confirmation link to")
+                        .font(.subheadline)
+                        .foregroundColor(.textSecondary)
+                    Text(email)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.textPrimary)
+                    Text("Click the link in the email to verify your account, then come back here to sign in.")
+                        .font(.caption)
+                        .foregroundColor(.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+
+                if let error = errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, DesignSystem.Spacing.lg)
+                }
+            }
+
+            Spacer()
+
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Button(action: handleResendVerification) {
+                    HStack(spacing: 6) {
+                        if isResendingVerification {
+                            ProgressView().tint(.white).scaleEffect(0.85)
+                        } else if verificationResent {
+                            Image(systemName: "checkmark")
+                        }
+                        Text(verificationResent ? "Email Sent!" : "Resend Verification Email")
+                    }
+                    .primaryButtonStyle()
+                }
+                .disabled(isResendingVerification || verificationResent)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+
+                Button(action: {
+                    signupPendingVerification = false
+                    isSignUp = false
+                    errorMessage = nil
+                    verificationResent = false
+                    confirmPassword = ""
+                    displayName = ""
+                }) {
+                    Text("Back to Sign In")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(DesignSystem.Colors.primaryOrange)
+                }
+                .padding(.bottom, DesignSystem.Spacing.lg)
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(DesignSystem.Colors.primaryOrange)
+                }
+            }
+        }
+    }
+
+    // MARK: - Form View
+    private var formView: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             // Header
             VStack(spacing: DesignSystem.Spacing.sm) {
@@ -129,14 +229,28 @@ struct EmailAuthView: View {
                             .font(.caption)
                             .foregroundColor(.textSecondary)
 
-                        SecureField("Confirm password", text: $confirmPassword)
-                            .textContentType(.newPassword)
-                            .font(.body)
-                            .foregroundColor(.textPrimary)
-                            .padding(.horizontal, DesignSystem.Spacing.md)
-                            .padding(.vertical, DesignSystem.Spacing.sm + 2)
-                            .background(Color.appSurface)
-                            .cornerRadius(DesignSystem.Spacing.buttonRadius)
+                        HStack {
+                            if showConfirmPassword {
+                                TextField("Confirm password", text: $confirmPassword)
+                                    .textContentType(.newPassword)
+                                    .font(.body)
+                                    .foregroundColor(.textPrimary)
+                            } else {
+                                SecureField("Confirm password", text: $confirmPassword)
+                                    .textContentType(.newPassword)
+                                    .font(.body)
+                                    .foregroundColor(.textPrimary)
+                            }
+
+                            Button(action: { showConfirmPassword.toggle() }) {
+                                Image(systemName: showConfirmPassword ? "eye.slash" : "eye")
+                                    .foregroundColor(.textSecondary)
+                            }
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.vertical, DesignSystem.Spacing.sm + 2)
+                        .background(Color.appSurface)
+                        .cornerRadius(DesignSystem.Spacing.buttonRadius)
                     }
                 }
             }
@@ -181,8 +295,8 @@ struct EmailAuthView: View {
                     .foregroundColor(DesignSystem.Colors.primaryOrange)
                 }
 
-                // Resend verification button (shown after signup when email needs confirmation)
-                if isSignUp && (error.localizedCaseInsensitiveContains("confirm") || error.localizedCaseInsensitiveContains("verification")) {
+                // Resend verification button (shown after sign-in when email needs confirmation)
+                if error.localizedCaseInsensitiveContains("confirm") || error.localizedCaseInsensitiveContains("verification") || error.localizedCaseInsensitiveContains("verify") {
                     Button(action: handleResendVerification) {
                         HStack(spacing: 4) {
                             if isResendingVerification {
@@ -266,6 +380,7 @@ struct EmailAuthView: View {
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
                     }
+                    .onAppear { forgotPasswordError = nil }
 
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                         Text("Email")
@@ -296,10 +411,11 @@ struct EmailAuthView: View {
                         .padding(.horizontal, DesignSystem.Spacing.lg)
                     }
 
-                    if let error = errorMessage, showForgotPassword == false {
+                    if let error = forgotPasswordError {
                         Text(error)
                             .font(.caption)
                             .foregroundColor(.red)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
                     }
 
                     Spacer()
@@ -335,12 +451,12 @@ struct EmailAuthView: View {
     // MARK: - Password Reset
     private func handlePasswordReset() {
         guard !forgotPasswordEmail.isEmpty, forgotPasswordEmail.contains("@") else {
-            errorMessage = "Please enter a valid email address"
+            forgotPasswordError = "Please enter a valid email address"
             return
         }
 
         isResettingPassword = true
-        errorMessage = nil
+        forgotPasswordError = nil
 
         Task {
             do {
@@ -352,7 +468,7 @@ struct EmailAuthView: View {
             } catch {
                 await MainActor.run {
                     isResettingPassword = false
-                    errorMessage = error.localizedDescription
+                    forgotPasswordError = error.localizedDescription
                 }
             }
         }
@@ -381,7 +497,6 @@ struct EmailAuthView: View {
 
     // MARK: - Validation
     private func validate() -> String? {
-        // Email validation
         guard !email.isEmpty else {
             return "Email is required"
         }
@@ -394,7 +509,6 @@ struct EmailAuthView: View {
             return "Name or nickname is required"
         }
 
-        // Password validation
         guard !password.isEmpty else {
             return "Password is required"
         }
@@ -403,7 +517,6 @@ struct EmailAuthView: View {
             return "Password must be at least 6 characters"
         }
 
-        // Confirm password (sign up only)
         if isSignUp && password != confirmPassword {
             return "Passwords do not match"
         }
@@ -413,16 +526,13 @@ struct EmailAuthView: View {
 
     // MARK: - Authentication
     private func handleAuth() {
-        // Clear previous error
         errorMessage = nil
 
-        // Check internet connectivity
         if isOffline() {
             errorMessage = "Make sure your phone is connected to the internet before you login or sign up"
             return
         }
 
-        // Validate
         if let error = validate() {
             errorMessage = error
             return
@@ -450,8 +560,7 @@ struct EmailAuthView: View {
                     if authManager.isAuthenticated {
                         onSuccess()
                     } else if isSignUp {
-                        // Email confirmation required
-                        errorMessage = "Please check your email to confirm your account"
+                        signupPendingVerification = true
                     }
                 }
             } catch {

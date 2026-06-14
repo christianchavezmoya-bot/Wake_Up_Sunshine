@@ -96,6 +96,10 @@ Deno.serve(async (req) => {
   const traceId = crypto.randomUUID();
   const startTime = Date.now();
 
+  // Rate limit configuration — override via Supabase secrets for dev vs prod
+  const DAILY_LIMIT   = parseInt(Deno.env.get("WAKE_DAILY_LIMIT")   ?? "50");
+  const COOLDOWN_MINS = parseInt(Deno.env.get("WAKE_COOLDOWN_MINS") ?? "5");
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -227,8 +231,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check daily limit (500 for development)
-    if (rateLimit && rateLimit.requests_today >= 500 && isSameDay(rateLimit.last_request_at)) {
+    // Check daily limit
+    if (rateLimit && rateLimit.requests_today >= DAILY_LIMIT && isSameDay(rateLimit.last_request_at)) {
       await logDebugEvent(supabase, traceId, 'send_wake_rate_limited', 'Daily limit exceeded', {
         reason: 'daily_limit',
         requestsToday: rateLimit.requests_today
@@ -243,9 +247,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check cooldown (reduced to 1 minute for development)
-    if (rateLimit?.last_request_at && !isCooldownComplete(rateLimit.last_request_at)) {
-      const remainingMinutes = getRemainingCooldown(rateLimit.last_request_at);
+    // Check cooldown
+    if (rateLimit?.last_request_at && !isCooldownComplete(rateLimit.last_request_at, COOLDOWN_MINS)) {
+      const remainingMinutes = getRemainingCooldown(rateLimit.last_request_at, COOLDOWN_MINS);
       await logDebugEvent(supabase, traceId, 'send_wake_rate_limited', 'Cooldown active', {
         reason: 'cooldown',
         remainingMinutes
@@ -638,28 +642,21 @@ function validateAlarmSound(alarmSoundId: string | undefined): AlarmSoundId {
 
 // Helper functions
 function isSameDay(date: string): boolean {
-  const d = new Date(date);
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
+  return new Date(date).toISOString().slice(0, 10) ===
+         new Date().toISOString().slice(0, 10);
 }
 
-function isCooldownComplete(lastRequest: string): boolean {
-  const last = new Date(lastRequest);
-  const now = new Date();
-  const diffMinutes = (now.getTime() - last.getTime()) / (1000 * 60);
-  // Reduced to 1 minute for development
-  return diffMinutes >= 1;
+function isCooldownComplete(lastRequest: string, cooldownMins: number): boolean {
+  const diffMinutes = (Date.now() - new Date(lastRequest).getTime()) / (1000 * 60);
+  return diffMinutes >= cooldownMins;
 }
 
-function getRemainingCooldown(lastRequest: string): number {
-  const last = new Date(lastRequest);
-  const now = new Date();
-  const diffMinutes = (now.getTime() - last.getTime()) / (1000 * 60);
-  const remaining = Math.ceil(1 - diffMinutes);
-  return Math.max(1, remaining);
+function getRemainingCooldown(lastRequest: string, cooldownMins: number): number {
+  const diffMinutes = (Date.now() - new Date(lastRequest).getTime()) / (1000 * 60);
+  return Math.max(1, Math.ceil(cooldownMins - diffMinutes));
 }
 
-// iOS APNs notification — uses sandbox endpoint for development builds
+// iOS APNs notification — host controlled by APNS_HOST env var (defaults to production)
 async function sendAPNsNotification(
   deviceToken: string,
   payload: any,
@@ -672,8 +669,7 @@ async function sendAPNsNotification(
     const soundFile = mapAlarmSoundToIOS(payload.alarmSoundId);
     const payloadMode = enableCriticalAlerts ? "critical" : "normal";
 
-    // Use sandbox for development builds (aps-environment = development)
-    const apnsHost = "api.sandbox.push.apple.com";
+    const apnsHost = Deno.env.get("APNS_HOST") ?? "api.push.apple.com";
 
     const aps: Record<string, any> = {
       alert: {

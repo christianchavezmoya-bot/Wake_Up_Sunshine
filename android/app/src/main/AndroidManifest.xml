@@ -44,6 +44,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="wakeupsunshine" android:host="invite" />
             </intent-filter>
+            <!-- Auth callback: wakeupsunshine:// (email verification, password reset) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wakeupsunshine" />
+            </intent-filter>
             <!-- App Links: https://wakeupsunshine.app/invite/<code> -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

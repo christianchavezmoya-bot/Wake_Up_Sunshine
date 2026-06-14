@@ -170,7 +170,8 @@ async function sendResponsePush(
         snoozeMinutes,
       };
 
-      const r = await fetch(`https://api.sandbox.push.apple.com/3/device/${deviceToken}`, {
+      const apnsHost = Deno.env.get("APNS_HOST") ?? "api.push.apple.com";
+      const r = await fetch(`https://${apnsHost}/3/device/${deviceToken}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

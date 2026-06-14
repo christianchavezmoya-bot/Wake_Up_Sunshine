@@ -38,12 +38,36 @@ struct WakeUpSunshineApp: App {
                     }
                 }
                 .onOpenURL { url in
+                    // Auth callback: wakeupsunshine://#access_token=...&type=signup|recovery
+                    if url.scheme == "wakeupsunshine",
+                       let fragment = url.fragment,
+                       fragment.contains("access_token") {
+                        Task {
+                            do {
+                                try await SupabaseManager.shared.client.auth.session(from: url)
+                                await authManager.checkSession()
+                            } catch {
+                                await MainActor.run {
+                                    appState.authCallbackError = "Sign-in link expired or already used. Please sign in manually."
+                                }
+                            }
+                        }
+                        return
+                    }
                     DeepLinkManager.shared.handle(url: url)
                     if authManager.isAuthenticated {
                         Task { await DeepLinkManager.shared.processPendingInvite() }
                     }
                     // If not logged in, the token is held in pendingToken and
                     // processed by the onChange(of: isAuthenticated) block above.
+                }
+                .alert("Sign-in Failed", isPresented: Binding(
+                    get: { appState.authCallbackError != nil },
+                    set: { if !$0 { appState.authCallbackError = nil } }
+                )) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(appState.authCallbackError ?? "")
                 }
         }
     }
@@ -92,6 +116,7 @@ class AppState: ObservableObject {
     @Published var currentUser: User?
     @Published var showingWakeAlert: Bool = false
     @Published var activeWakeRequest: WakeRequest?
+    @Published var authCallbackError: String?
 
     init() {
         self.isOnboardingComplete = UserDefaults.standard.bool(forKey: "onboardingComplete")

@@ -3,24 +3,29 @@ package com.wakeupsunshine.ui.alarm
 import android.app.KeyguardManager
 import android.app.NotificationManager
 import android.content.Context
+import android.database.ContentObserver
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Vibrator
+import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import com.wakeupsunshine.data.HistoryRefreshSignal
 import com.wakeupsunshine.data.SupabaseClient
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -47,6 +52,10 @@ class AlarmActivity : ComponentActivity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var audioManager: AudioManager? = null
+    private var originalAlarmVolume: Int = -1
+    private var volumeObserver: ContentObserver? = null
+    private var wakeRequestId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +66,7 @@ class AlarmActivity : ComponentActivity() {
         val message = intent.getStringExtra(EXTRA_MESSAGE) ?: ""
         val alarmSoundId = intent.getStringExtra(EXTRA_ALARM_SOUND_ID)
         val alarmSound = AlarmSound.from(alarmSoundId)
-        val wakeRequestId = intent.getStringExtra("wake_request_id") ?: ""
+        wakeRequestId = intent.getStringExtra("wake_request_id") ?: ""
 
         setContent {
             AlarmScreen(
@@ -67,14 +76,12 @@ class AlarmActivity : ComponentActivity() {
                 onDismiss = {
                     stopAlarmSound()
                     cancelNotification()
-                    sendWakeResponse(wakeRequestId, "confirmed")
-                    finish()
+                    sendWakeResponseAndFinish(wakeRequestId, "confirmed")
                 },
                 onSnooze = {
                     stopAlarmSound()
                     cancelNotification()
-                    sendWakeResponse(wakeRequestId, "snoozed", snoozeMinutes = 5)
-                    finish()
+                    sendWakeResponseAndFinish(wakeRequestId, "snoozed", snoozeMinutes = 5)
                 }
             )
         }
@@ -86,6 +93,14 @@ class AlarmActivity : ComponentActivity() {
             val alarmSoundId = intent.getStringExtra(EXTRA_ALARM_SOUND_ID)
             playAlarmSound(AlarmSound.from(alarmSoundId))
         }
+        // Auto-dismiss after 5 minutes if the user doesn't respond
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isFinishing) {
+                stopAlarmSound()
+                cancelNotification()
+                sendWakeResponseAndFinish(wakeRequestId, "missed")
+            }
+        }, 5 * 60 * 1000L)
     }
 
     override fun onDestroy() {
@@ -110,16 +125,52 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    private fun forceMaxVolume() {
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val am = audioManager ?: return
+        val maxVol = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        originalAlarmVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
+        am.setStreamVolume(AudioManager.STREAM_ALARM, maxVol, 0)
+
+        // Make hardware volume buttons control the alarm stream
+        setVolumeControlStream(AudioManager.STREAM_ALARM)
+
+        // Reset to max if the user tries to lower it while the alarm is active
+        volumeObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                val current = am.getStreamVolume(AudioManager.STREAM_ALARM)
+                if (current < maxVol) {
+                    am.setStreamVolume(AudioManager.STREAM_ALARM, maxVol, 0)
+                }
+            }
+        }
+        volumeObserver?.let {
+            contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, it)
+        }
+    }
+
+    private fun restoreVolume() {
+        volumeObserver?.let { contentResolver.unregisterContentObserver(it) }
+        volumeObserver = null
+        if (originalAlarmVolume >= 0) {
+            audioManager?.setStreamVolume(AudioManager.STREAM_ALARM, originalAlarmVolume, 0)
+        }
+    }
+
     private fun stopAlarmSound() {
+        restoreVolume()
+
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
-        
+
         vibrator?.cancel()
         vibrator = null
     }
 
     private fun playAlarmSound(sound: AlarmSound) {
+        forceMaxVolume()
+
         // Try to play custom sound from res/raw
         val resourceId = resources.getIdentifier(
             sound.id,
@@ -177,16 +228,25 @@ class AlarmActivity : ComponentActivity() {
         nm.cancel(WakeMessagingService.NOTIFICATION_ID)
     }
 
-    private fun sendWakeResponse(wakeRequestId: String, action: String, snoozeMinutes: Int = 0) {
-        if (wakeRequestId.isEmpty()) return
+    private fun sendWakeResponseAndFinish(wakeRequestId: String, action: String, snoozeMinutes: Int = 0) {
+        if (wakeRequestId.isEmpty()) {
+            finish()
+            return
+        }
         val ctx = applicationContext
         val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(
+            Dispatchers.IO + CoroutineExceptionHandler { _, e ->
+                Log.e("AlarmActivity", "sendWakeResponseAndFinish: unhandled error", e)
+                runOnUiThread { finish() }
+            }
+        ) {
             try {
                 SupabaseClient.restoreSession(ctx)
                 val session = SupabaseClient.session
                 if (session == null) {
-                    Log.e("AlarmActivity", "sendWakeResponse: no session after restore, skipping")
+                    Log.e("AlarmActivity", "sendWakeResponseAndFinish: no session, skipping")
+                    withContext(Dispatchers.Main) { finish() }
                     return@launch
                 }
                 val payload = JSONObject()
@@ -202,13 +262,15 @@ class AlarmActivity : ComponentActivity() {
                     .addHeader("Authorization", "Bearer ${session.accessToken}")
                     .post(payload.toString().toRequestBody(jsonMediaType))
                     .build()
-                val response = OkHttpClient().newCall(request).execute()
-                com.wakeupsunshine.data.DebugLogger.debug("AlarmActivity", "sendWakeResponse action=$action response=${response.code}")
+                val response = SupabaseClient.sharedHttpClient.newCall(request).execute()
+                com.wakeupsunshine.data.DebugLogger.debug("AlarmActivity", "sendWakeResponseAndFinish action=$action response=${response.code}")
                 if (response.isSuccessful) {
                     HistoryRefreshSignal.emit()
                 }
             } catch (e: Exception) {
-                Log.e("AlarmActivity", "sendWakeResponse: failed", e)
+                Log.e("AlarmActivity", "sendWakeResponseAndFinish: failed", e)
+            } finally {
+                withContext(Dispatchers.Main) { finish() }
             }
         }
     }

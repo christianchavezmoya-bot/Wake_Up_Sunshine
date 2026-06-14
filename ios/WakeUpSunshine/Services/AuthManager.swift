@@ -477,14 +477,11 @@ private enum DeleteAccountError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .server(let statusCode, let message):
-            if statusCode == 404 {
-                return "Delete account endpoint returned 404. The deployed Supabase project is missing the `delete-account` function or the app is pointing at the wrong backend."
+        case .server(let statusCode, _):
+            if statusCode == 401 {
+                return "Session expired. Please sign in again and retry."
             }
-            if let message, !message.isEmpty {
-                return "Delete account failed (\(statusCode)): \(message)"
-            }
-            return "Delete account failed with server error \(statusCode)."
+            return "Could not delete account. Please try again."
         }
     }
 }
