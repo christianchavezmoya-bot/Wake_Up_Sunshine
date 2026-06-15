@@ -1,8 +1,23 @@
+import java.util.Properties
+
 // Android app module
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.22'
     id 'com.google.gms.google-services'
+    id 'dagger.hilt.android.plugin'
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+
+if (hasReleaseKeystore) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
 }
 
 android {
@@ -15,6 +30,8 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
+        buildConfigField "String", "TERMS_OF_SERVICE_URL", "\"https://wakeupsunshine.app/terms\""
+        buildConfigField "String", "PRIVACY_POLICY_URL", "\"https://wakeupsunshine.app/privacy\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,8 +41,23 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKeystore) {
+                storeFile file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+            }
         }
     }
 
@@ -39,6 +71,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig true
         compose true
     }
 
@@ -57,22 +90,29 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
     implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.biometric:biometric:1.1.0'
 
-    // Compose
-    implementation platform('androidx.compose:compose-bom:2024.01.00')
+    // Compose - using 2024.02.00 for animation API compatibility
+    implementation platform('androidx.compose:compose-bom:2024.02.00')
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
 
     // Navigation
     implementation 'androidx.navigation:navigation-compose:2.7.6'
 
-    // Supabase
-    implementation 'io.supabase:supabase-kt:2.1.0'
+    // Ktor (for future use if needed)
+    implementation 'io.ktor:ktor-client-android:2.3.7'
+    implementation 'io.ktor:ktor-client-core:2.3.7'
+    implementation 'io.ktor:ktor-client-content-negotiation:2.3.7'
+    implementation 'io.ktor:ktor-serialization-kotlinx-json:2.3.7'
+    implementation 'io.ktor:ktor-utils:2.3.7'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2'
 
     // Firebase BoM (Bill of Materials) - manages all Firebase versions
-    implementation platform('com.google.firebase:firebase-bom:34.12.0')
+    implementation platform('com.google.firebase:firebase-bom:32.7.1')
     implementation 'com.google.firebase:firebase-messaging-ktx'
 
     // Hilt for DI
@@ -82,6 +122,16 @@ dependencies {
 
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+
+    // OkHttp for HTTP requests
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    
+    // QR Code generation
+    implementation 'com.github.androidmads:QRGenerator:1.0.1'
+    implementation 'com.google.zxing:core:3.5.2'
+    
+    // Google Play Billing
+    implementation 'com.android.billingclient:billing-ktx:6.1.0'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

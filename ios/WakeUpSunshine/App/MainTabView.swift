@@ -1,8 +1,11 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Tab = .home
-
+    @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var contactsViewModel = ContactsViewModel()
+    
     enum Tab: Int, CaseIterable {
         case home
         case contacts
@@ -11,7 +14,7 @@ struct MainTabView: View {
 
         var title: String {
             switch self {
-            case .home: return "Home"
+            case .home: return "Wake up"
             case .contacts: return "Contacts"
             case .history: return "History"
             case .settings: return "Settings"
@@ -20,7 +23,7 @@ struct MainTabView: View {
 
         var icon: String {
             switch self {
-            case .home: return "house.fill"
+            case .home: return "bell.fill"
             case .contacts: return "person.2.fill"
             case .history: return "clock.fill"
             case .settings: return "gearshape.fill"
@@ -54,7 +57,21 @@ struct MainTabView: View {
                 }
                 .tag(Tab.settings)
         }
-        .tint(Color("PrimaryOrange"))
+        .tint(themeManager.primaryColor)
+        .preferredColorScheme(themeManager.colorScheme)
+        .environmentObject(contactsViewModel)
+        .task {
+            contactsViewModel.startSync()
+            await contactsViewModel.fetchAllData()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .contactsShouldRefresh)) { _ in
+            Task { await contactsViewModel.fetchAllData() }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await contactsViewModel.fetchAllData() }
+            }
+        }
     }
 }
 

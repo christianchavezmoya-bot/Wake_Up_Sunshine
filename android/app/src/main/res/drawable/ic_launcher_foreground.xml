@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Sun icon -->
+    <group android:translateX="27" android:translateY="27">
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M27,27m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0"/>
+        <!-- Sun rays -->
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M27,0 L30,8 L24,8 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M27,46 L30,54 L24,54 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M0,27 L8,30 L8,24 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M46,27 L54,30 L54,24 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M7.8,7.8 L13.5,12.3 L9.4,16.4 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M40.5,40.5 L46.2,45 L42.1,49.1 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M46.2,7.8 L42.1,12.3 L46.2,16.4 Z"/>
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M7.8,46.2 L12.3,42.1 L16.4,46.2 Z"/>
+    </group>
+</vector>

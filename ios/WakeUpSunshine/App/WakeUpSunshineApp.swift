@@ -3,9 +3,13 @@ import UserNotifications
 
 @main
 struct WakeUpSunshineApp: App {
+    // Register AppDelegate for APNs callbacks
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     @StateObject private var appState = AppState()
     @StateObject private var authManager = AuthManager()
-    @StateObject private var pushManager = PushNotificationManager()
+    // Use the singleton so that notification callbacks update the same object the UI observes
+    @StateObject private var pushManager = PushNotificationManager.shared
 
     init() {
         setupAppearance()
@@ -17,8 +21,53 @@ struct WakeUpSunshineApp: App {
                 .environmentObject(appState)
                 .environmentObject(authManager)
                 .environmentObject(pushManager)
+                .environmentObject(DeepLinkManager.shared)
                 .onAppear {
                     setupNotifications()
+                    Task {
+                        await authManager.checkSession()
+                        registerForPushNotificationsIfLoggedIn()
+                    }
+                }
+                .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
+                    if isAuthenticated {
+                        appDelegate.registerForPushNotifications()
+                        Task { await PushNotificationManager.shared.onUserLoggedIn() }
+                        // Process any invite link that arrived before login
+                        Task { await DeepLinkManager.shared.processPendingInvite() }
+                    }
+                }
+                .onOpenURL { url in
+                    // Auth callback: wakeupsunshine://#access_token=...&type=signup|recovery
+                    if url.scheme == "wakeupsunshine",
+                       let fragment = url.fragment,
+                       fragment.contains("access_token") {
+                        Task {
+                            do {
+                                try await SupabaseManager.shared.client.auth.session(from: url)
+                                await authManager.checkSession()
+                            } catch {
+                                await MainActor.run {
+                                    appState.authCallbackError = "Sign-in link expired or already used. Please sign in manually."
+                                }
+                            }
+                        }
+                        return
+                    }
+                    DeepLinkManager.shared.handle(url: url)
+                    if authManager.isAuthenticated {
+                        Task { await DeepLinkManager.shared.processPendingInvite() }
+                    }
+                    // If not logged in, the token is held in pendingToken and
+                    // processed by the onChange(of: isAuthenticated) block above.
+                }
+                .alert("Sign-in Failed", isPresented: Binding(
+                    get: { appState.authCallbackError != nil },
+                    set: { if !$0 { appState.authCallbackError = nil } }
+                )) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(appState.authCallbackError ?? "")
                 }
         }
     }
@@ -45,6 +94,20 @@ struct WakeUpSunshineApp: App {
     private func setupNotifications() {
         UNUserNotificationCenter.current().delegate = pushManager
     }
+    
+    private func registerForPushNotificationsIfLoggedIn() {
+        // Check if user is logged in and register for push notifications
+        Task {
+            if SupabaseManager.shared.client.auth.currentSession != nil {
+                DebugLogger.shared.log(eventType: "push_auto_register", message: "User logged in, registering for push notifications")
+                appDelegate.registerForPushNotifications()
+                // Also upload any cached token
+                await PushNotificationManager.shared.onUserLoggedIn()
+            } else {
+                DebugLogger.shared.log(eventType: "push_auto_register_skipped", message: "User not logged in, skipping push registration")
+            }
+        }
+    }
 }
 
 // MARK: - App State
@@ -53,6 +116,7 @@ class AppState: ObservableObject {
     @Published var currentUser: User?
     @Published var showingWakeAlert: Bool = false
     @Published var activeWakeRequest: WakeRequest?
+    @Published var authCallbackError: String?
 
     init() {
         self.isOnboardingComplete = UserDefaults.standard.bool(forKey: "onboardingComplete")
@@ -135,53 +199,12 @@ struct WakePermission: Identifiable, Codable {
     }
 }
 
-// MARK: - Wake Request Model
-struct WakeRequest: Identifiable, Codable {
-    let id: String
-    let senderId: String
-    let receiverId: String
-    var message: String?
-    var urgency: WakeUrgency
-    var status: WakeStatus
-    var sentAt: Date
-    var deliveredAt: Date?
-    var dismissedAt: Date?
-    var confirmedAt: Date?
-    var snoozedAt: Date?
-
-    enum WakeUrgency: String, Codable {
-        case low
-        case normal
-        case high
-        case emergency
-    }
-
-    enum WakeStatus: String, Codable {
-        case pending
-        case delivered
-        case alarmPlaying
-        case dismissed
-        case confirmed
-        case snoozed
-        case expired
-    }
-
-    init(id: String = UUID().uuidString, senderId: String, receiverId: String, message: String? = nil, urgency: WakeUrgency = .normal) {
-        self.id = id
-        self.senderId = senderId
-        self.receiverId = receiverId
-        self.message = message
-        self.urgency = urgency
-        self.status = .pending
-        self.sentAt = Date()
-    }
-}
-
 // MARK: - Contact Model (for display)
 struct Contact: Identifiable {
     let id: String
     let userId: String
     var displayName: String
+    var email: String
     var avatarColor: String
     var isOnline: Bool
     var permissionStatus: WakePermission.PermissionStatus
@@ -191,9 +214,22 @@ struct Contact: Identifiable {
         self.id = permission.id
         self.userId = permission.trusteeId
         self.displayName = displayName
+        self.email = ""
         self.avatarColor = avatarColor
         self.isOnline = isOnline
         self.permissionStatus = permission.status
+        self.lastWakeAt = nil
+    }
+    
+    // Convenience initializer for ContactItem mapping
+    init(id: String, userId: String, displayName: String, email: String, avatarColor: String, isOnline: Bool = false) {
+        self.id = id
+        self.userId = userId
+        self.displayName = displayName
+        self.email = email
+        self.avatarColor = avatarColor
+        self.isOnline = isOnline
+        self.permissionStatus = .active
         self.lastWakeAt = nil
     }
 }

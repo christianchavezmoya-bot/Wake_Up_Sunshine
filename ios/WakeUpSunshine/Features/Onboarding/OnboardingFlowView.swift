@@ -6,16 +6,14 @@ struct OnboardingFlowView: View {
 
     enum OnboardingStep: Int, CaseIterable {
         case welcome
-        case phoneInput
-        case otpVerification
-        case permissions // Consolidated: notifications + critical alerts
+        case emailAuth
+        case permissions
         case ready
 
         var progress: Double {
             switch self {
             case .welcome: return 0.2
-            case .phoneInput: return 0.4
-            case .otpVerification: return 0.6
+            case .emailAuth: return 0.5
             case .permissions: return 0.8
             case .ready: return 1.0
             }
@@ -24,8 +22,7 @@ struct OnboardingFlowView: View {
         var title: String {
             switch self {
             case .welcome: return ""
-            case .phoneInput: return "Back"
-            case .otpVerification: return "Back"
+            case .emailAuth: return "Back"
             case .permissions: return "Back"
             case .ready: return ""
             }
@@ -61,23 +58,20 @@ struct OnboardingFlowView: View {
                 // Content with spring animation
                 switch currentStep {
                 case .welcome:
-                    WelcomeStepView(onContinue: { currentStep = .phoneInput })
+                    WelcomeStepView(onEmailContinue: { currentStep = .emailAuth })
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
-                case .phoneInput:
-                    PhoneInputStepView(onContinue: { currentStep = .otpVerification })
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                case .otpVerification:
-                    OtpVerificationStepView(onContinue: { currentStep = .permissions })
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                case .emailAuth:
+                    EmailAuthView(
+                        onSuccess: { currentStep = .permissions },
+                        onBack: { currentStep = .welcome }
+                    )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
                 case .permissions:
                     PermissionsStepView(onContinue: { currentStep = .ready })
                         .transition(.asymmetric(
@@ -95,12 +89,10 @@ struct OnboardingFlowView: View {
 
     private func goBack() {
         switch currentStep {
-        case .phoneInput:
+        case .emailAuth:
             currentStep = .welcome
-        case .otpVerification:
-            currentStep = .phoneInput
         case .permissions:
-            currentStep = .otpVerification
+            currentStep = .emailAuth
         default:
             break
         }
@@ -109,7 +101,7 @@ struct OnboardingFlowView: View {
 
 // MARK: - Welcome Step
 struct WelcomeStepView: View {
-    let onContinue: () -> Void
+    let onEmailContinue: () -> Void
 
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
@@ -149,9 +141,12 @@ struct WelcomeStepView: View {
 
             Spacer()
 
-            Button(action: onContinue) {
-                Text("Get Started")
-                    .primaryButtonStyle()
+            Button(action: onEmailContinue) {
+                HStack {
+                    Image(systemName: "envelope.fill")
+                    Text("Continue with Email")
+                }
+                .primaryButtonStyle()
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.bottom, DesignSystem.Spacing.lg)

@@ -1,38 +1,78 @@
 import SwiftUI
+import Combine
 
 struct HistoryView: View {
     @StateObject private var viewModel = HistoryViewModel()
-    @State private var isRefreshing = false
+    @State private var showDeleteAllConfirm = false
 
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.appBackground.ignoresSafeArea()
 
-                ScrollView {
-                    LazyVStack(spacing: DesignSystem.Spacing.lg, pinnedViews: .sectionHeaders) {
-                        ForEach(viewModel.groupedHistory.keys.sorted().reversed(), id: \.self) { date in
-                            Section {
-                                ForEach(viewModel.groupedHistory[date] ?? []) { item in
-                                    HistoryItemRow(item: item)
-                                        .transition(.scale.combined(with: .opacity).animation(.springStandard))
+                if viewModel.isLoading && viewModel.groupedHistory.isEmpty {
+                    ProgressView()
+                        .tint(DesignSystem.Colors.primaryOrange)
+                } else if !viewModel.isLoading && viewModel.groupedHistory.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 52))
+                            .foregroundColor(DesignSystem.Colors.primaryOrange.opacity(0.4))
+                        Text("No wake history yet")
+                            .font(.headline)
+                            .foregroundColor(.textSecondary)
+                    }
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: DesignSystem.Spacing.lg, pinnedViews: .sectionHeaders) {
+                            ForEach(viewModel.groupedHistory.keys.sorted().reversed(), id: \.self) { date in
+                                Section {
+                                    ForEach(viewModel.groupedHistory[date] ?? []) { item in
+                                        HistoryItemRow(item: item)
+                                            .transition(.scale.combined(with: .opacity).animation(.springStandard))
+                                            .contextMenu {
+                                                Button(role: .destructive) {
+                                                    viewModel.delete(id: item.id)
+                                                } label: {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
+                                            }
+                                    }
+                                } header: {
+                                    DateHeaderView(date: date)
                                 }
-                            } header: {
-                                DateHeaderView(date: date)
                             }
                         }
+                        .padding(.top, DesignSystem.Spacing.md)
+                        .padding(.bottom, DesignSystem.Spacing.xxl)
                     }
-                    .padding(.top, DesignSystem.Spacing.md)
-                    .padding(.bottom, DesignSystem.Spacing.xxl)
-                }
-                .refreshable {
-                    // Pull-to-refresh action
-                    isRefreshing = true
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    isRefreshing = false
+                    .refreshable { await viewModel.load() }
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if !viewModel.groupedHistory.isEmpty {
+                        Button {
+                            showDeleteAllConfirm = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+            }
+            .alert("Delete All History?", isPresented: $showDeleteAllConfirm) {
+                Button("Delete All", role: .destructive) { viewModel.deleteAll() }
+                Button("Cancel", role: .cancel) {}
+            }
+            .task { await viewModel.load() }
+            .onReceive(NotificationCenter.default.publisher(for: .wakeResponseReceived)) { _ in
+                Task { await viewModel.load() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wakeSent)) { _ in
+                Task { await viewModel.load() }
+            }
         }
     }
 }
@@ -94,17 +134,30 @@ struct HistoryItemRow: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.textPrimary)
 
-                    // Direction indicator
                     Image(systemName: item.isIncoming ? "arrow.down" : "arrow.up")
                         .font(.caption2)
                         .foregroundColor(.textTertiary)
                 }
 
-                if let message = item.message {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundColor(.textSecondary)
-                        .lineLimit(1)
+                HStack(spacing: 4) {
+                    if let soundId = item.alarmSoundId {
+                        let soundName = AlarmSound.from(id: soundId).displayName
+                        Image(systemName: "bell.fill")
+                            .font(.caption2)
+                            .foregroundColor(.textTertiary)
+                        Text(soundName)
+                            .font(.caption)
+                            .foregroundColor(.textSecondary)
+                    }
+                    if let message = item.message, !message.isEmpty {
+                        if item.alarmSoundId != nil {
+                            Text("·").font(.caption).foregroundColor(.textTertiary)
+                        }
+                        Text(message)
+                            .font(.caption)
+                            .foregroundColor(.textSecondary)
+                            .lineLimit(1)
+                    }
                 }
             }
 
@@ -155,19 +208,22 @@ struct HistoryItem: Identifiable {
     let avatarColor: String
     let title: String
     let message: String?
+    let alarmSoundId: String?
     let timestamp: Date
     let status: HistoryStatus
     let isIncoming: Bool
 
     enum HistoryStatus {
         case confirmed
+        case snoozed
         case delivered
         case dismissed
         case pending
 
         var displayName: String {
             switch self {
-            case .confirmed: return "Confirmed"
+            case .confirmed: return "Awake"
+            case .snoozed: return "Snoozed"
             case .delivered: return "Delivered"
             case .dismissed: return "Dismissed"
             case .pending: return "Pending"
@@ -177,6 +233,7 @@ struct HistoryItem: Identifiable {
         var backgroundColor: Color {
             switch self {
             case .confirmed: return DesignSystem.Colors.successLight
+            case .snoozed: return DesignSystem.Colors.warning.opacity(0.15)
             case .delivered: return DesignSystem.Colors.primaryOrange.opacity(0.1)
             case .dismissed: return DesignSystem.Colors.errorLight
             case .pending: return DesignSystem.Colors.surfaceLight.opacity(0.5)
@@ -186,6 +243,7 @@ struct HistoryItem: Identifiable {
         var foregroundColor: Color {
             switch self {
             case .confirmed: return DesignSystem.Colors.success
+            case .snoozed: return DesignSystem.Colors.warning
             case .delivered: return DesignSystem.Colors.primaryOrange
             case .dismissed: return DesignSystem.Colors.error
             case .pending: return .textSecondary
@@ -194,33 +252,112 @@ struct HistoryItem: Identifiable {
     }
 }
 
+// MARK: - Backend History Response
+private struct GetHistoryResponse: Decodable {
+    let success: Bool
+    let history: [BackendHistoryItem]
+    let error: String?
+}
+
+private struct BackendHistoryItem: Decodable {
+    let id: String
+    let direction: String
+    let otherUserName: String?
+    let otherUserEmail: String?
+    let avatarColor: String?
+    let alarmSoundId: String?
+    let message: String?
+    let status: String
+    let responseAction: String?
+    let respondedAt: String?
+    let sentAt: String?
+    let createdAt: String
+}
+
 // MARK: - History ViewModel
 class HistoryViewModel: ObservableObject {
     @Published var groupedHistory: [Date: [HistoryItem]] = [:]
+    @Published var isLoading = false
 
-    init() {
-        loadMockData()
+    private let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private let isoFormatterShort: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    @MainActor
+    func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let result: GetHistoryResponse = try await APIClient.shared.request(
+                endpoint: "/wake/history",
+                method: "GET"
+            )
+            guard result.success else { return }
+            let calendar = Calendar.current
+            var grouped: [Date: [HistoryItem]] = [:]
+            for item in result.history {
+                let ts = parseDate(item.sentAt ?? item.createdAt)
+                let dayKey = calendar.startOfDay(for: ts)
+                let name = (item.otherUserName?.isEmpty == false ? item.otherUserName : item.otherUserEmail) ?? "Unknown"
+                let direction = item.direction == "sent"
+                let title = direction ? "Woke \(name)" : "\(name) woke you"
+                let historyStatus = mapStatus(item.responseAction ?? item.status)
+                let hi = HistoryItem(
+                    id: item.id,
+                    name: name,
+                    avatarColor: item.avatarColor ?? "#FF6B35",
+                    title: title,
+                    message: item.message,
+                    alarmSoundId: item.alarmSoundId,
+                    timestamp: ts,
+                    status: historyStatus,
+                    isIncoming: !direction
+                )
+                grouped[dayKey, default: []].append(hi)
+            }
+            groupedHistory = grouped
+        } catch {
+            print("[HistoryViewModel] load error: \(error)")
+        }
     }
 
-    func loadMockData() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-        let thisWeek = calendar.date(byAdding: .day, value: -3, to: today)!
+    @MainActor
+    func deleteAll() {
+        groupedHistory = [:]
+    }
 
-        groupedHistory = [
-            today: [
-                HistoryItem(id: "1", name: "Alex Chen", avatarColor: "#667eea", title: "Woke Alex Chen", message: "Morning shift - don't forget!", timestamp: Date(), status: .confirmed, isIncoming: false),
-                HistoryItem(id: "2", name: "Sarah Miller", avatarColor: "#f5576c", title: "Woke Sarah Miller", message: "Flight time!", timestamp: calendar.date(byAdding: .hour, value: -5, to: Date())!, status: .confirmed, isIncoming: false),
-            ],
-            yesterday: [
-                HistoryItem(id: "3", name: "Mike Johnson", avatarColor: "#4facfe", title: "Mike Johnson woke you", message: "Good morning!", timestamp: calendar.date(byAdding: .hour, value: -24, to: Date())!, status: .dismissed, isIncoming: true),
-                HistoryItem(id: "4", name: "Alex Chen", avatarColor: "#667eea", title: "Woke Alex Chen", message: "Team meeting in 30 min", timestamp: calendar.date(byAdding: .hour, value: -20, to: Date())!, status: .confirmed, isIncoming: false),
-            ],
-            thisWeek: [
-                HistoryItem(id: "5", name: "Emma Davis", avatarColor: "#43e97b", title: "Woke Emma Davis", message: "Dentist appointment", timestamp: calendar.date(byAdding: .day, value: -3, to: Date())!, status: .delivered, isIncoming: false),
-            ]
-        ]
+    @MainActor
+    func delete(id: String) {
+        for (date, items) in groupedHistory {
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                groupedHistory[date]!.remove(at: idx)
+                if groupedHistory[date]!.isEmpty {
+                    groupedHistory.removeValue(forKey: date)
+                }
+                return
+            }
+        }
+    }
+
+    private func parseDate(_ iso: String) -> Date {
+        isoFormatter.date(from: iso) ?? isoFormatterShort.date(from: iso) ?? Date()
+    }
+
+    private func mapStatus(_ raw: String) -> HistoryItem.HistoryStatus {
+        switch raw {
+        case "confirmed": return .confirmed
+        case "snoozed": return .snoozed
+        case "delivered", "sent": return .delivered
+        case "dismissed", "timed_out": return .dismissed
+        default: return .pending
+        }
     }
 }
 
